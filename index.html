@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament Hub | Pro</title>
+    <title>TBG</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -15,8 +18,6 @@
             --border: #e2e8f0;
             --accent: #3b82f6;
             --input-bg: #f1f5f9;
-            --shadow: rgba(0, 0, 0, 0.05);
-            --glow-opacity: 0.03;
         }
         .dark {
             --bg: #020617;
@@ -26,407 +27,287 @@
             --border: #1e293b;
             --accent: #60a5fa;
             --input-bg: #1e293b;
-            --shadow: rgba(0, 0, 0, 0.3);
-            --glow-opacity: 0.08;
         }
+
         body { 
-            background: var(--bg); 
-            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg); 
             color: var(--text);
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Inter', sans-serif;
             transition: background 0.3s ease, color 0.3s ease;
-            position: relative;
-            overflow-x: hidden;
+            min-height: 100vh;
+            margin: 0;
         }
+
+        /* HARD OVERRIDES FOR READABILITY */
+        h1, h2, h3, h4, p, span, div, textarea, input { color: var(--text); }
+        .label-text { color: var(--text-muted) !important; }
+        .accent-text { color: var(--accent) !important; }
+        #size-display { color: var(--text) !important; }
+
+        .card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+        }
+
+        .input-field {
+            background-color: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            color: var(--text) !important;
+            padding: 1rem;
+            outline: none;
+        }
+        .input-field:focus { background-color: var(--card); border-color: var(--accent); }
+
+        .tab {
+            cursor: pointer;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            color: var(--text-muted) !important;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+        }
+        .tab.active {
+            background-color: var(--card);
+            color: var(--accent) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            border-radius: 99px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .finalize-card {
+            background-color: #0f172a;
+            border-radius: 24px;
+            color: white !important;
+            padding: 3rem;
+            text-align: center;
+        }
+        .dark .finalize-card { background-color: #2563eb; }
+
+        .btn-engine {
+            background-color: white;
+            color: #0f172a !important;
+            width: 100%;
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            font-weight: 900;
+            font-size: 1.25rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-engine:hover { transform: scale(1.01); }
+
         .bg-glow {
             position: fixed;
-            width: 40vw;
-            height: 40vw;
+            width: 50vw;
+            height: 50vw;
             background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-            opacity: var(--glow-opacity);
+            opacity: 0.04;
             filter: blur(80px);
             z-index: -1;
             pointer-events: none;
-            transition: opacity 0.3s ease;
         }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            box-shadow: 0 10px 25px -5px var(--shadow);
-            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .btn:active { transform: scale(0.98); }
-        .input-field {
-            background: var(--input-bg);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            color: var(--text);
-            transition: all 0.2s ease;
-        }
-        .input-field:focus {
-            background: var(--card);
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            outline: none;
-        }
-        .tab {
-            cursor: pointer;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            transition: all 0.2s ease;
-        }
-        .tab.active {
-            background: var(--card);
-            color: var(--accent);
-            box-shadow: 0 4px 12px var(--shadow);
-        }
-        .theme-toggle {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            z-index: 50;
-            background: var(--card);
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 99px;
-            box-shadow: 0 4px 12px var(--shadow);
-        }
-        .title-text { color: var(--text) !important; }
-        .label-text { color: var(--text-muted) !important; }
-        #size-display { color: var(--text) !important; }
     </style>
 </head>
-<body class="dark min-h-screen py-12 px-4">
+<body class="dark px-4 py-12">
 
     <div class="bg-glow" style="top: -10%; left: -10%;"></div>
     <div class="bg-glow" style="bottom: -10%; right: -10%;"></div>
 
-    <button class="theme-toggle btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
-        <svg id="sun-icon" class="w-6 h-6 hidden text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
-        <svg id="moon-icon" class="w-6 h-6 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+    <button class="theme-toggle" onclick="window.toggleTheme()">
+        <svg id="sun-icon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20" style="color: #fbbf24;"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        <svg id="moon-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" style="color: #818cf8;"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
     </button>
 
     <div class="max-w-3xl mx-auto">
-        <div class="flex items-center gap-3 mb-12 group">
-            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:rotate-12 transition-transform duration-500">
-                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <!-- Brand -->
+        <div class="flex items-center gap-4 mb-12">
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <div>
-                <h1 class="text-2xl font-black tracking-tighter title-text">HUB<span class="text-blue-500">PRO</span></h1>
-                <p class="text-[10px] font-bold label-text uppercase tracking-widest leading-none">Management Suite</p>
+                <h1 class="text-3xl font-black tracking-tighter uppercase">Bracket<span class="accent-text">Generator</span></h1>
+                <p class="text-[10px] font-bold label-text uppercase tracking-[0.2em]">Tournament Suite</p>
             </div>
         </div>
 
         <div id="app" class="space-y-8">
+            <!-- Step 1 -->
             <section class="card p-8">
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-xs font-black uppercase tracking-[0.2em] label-text">Tournament Structure</h2>
-                    <div class="h-1 w-12 bg-blue-500/20 rounded-full"></div>
-                </div>
-
+                <h2 class="text-xs font-black uppercase tracking-[0.2em] label-text mb-6">Step 1: Setup</h2>
                 <div class="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-2xl mb-8">
-                    <div id="tab-auto" class="tab active flex-1 text-center" onclick="setMode('auto')">Auto-Pool</div>
-                    <div id="tab-manual" class="tab flex-1 text-center" onclick="setMode('manual')">Direct Entry</div>
+                    <button id="tab-auto" class="tab active flex-1" onclick="window.setMode('auto')">Auto-Pool</button>
+                    <button id="tab-manual" class="tab flex-1" onclick="window.setMode('manual')">Direct Entry</button>
                 </div>
-
                 <div class="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/30 rounded-3xl border border-slate-100 dark:border-slate-800">
                     <div>
-                        <p class="font-black text-sm uppercase tracking-tight title-text">Team Capacity</p>
-                        <p class="text-xs label-text">Optimizing bracket distribution</p>
+                        <p class="font-black text-sm uppercase tracking-tight">Squad Capacity</p>
+                        <p class="text-[10px] font-bold label-text uppercase tracking-widest mt-1">People per team</p>
                     </div>
-                    <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
-                        <button onclick="changeSize(-1)" class="w-10 h-10 rounded-xl flex items-center justify-center font-bold label-text hover:text-blue-500 transition-colors">-</button>
-                        <span id="size-display" class="w-6 text-center font-black text-xl title-text">1</span>
-                        <button onclick="changeSize(1)" class="w-10 h-10 rounded-xl flex items-center justify-center font-bold label-text hover:text-blue-500 transition-colors">+</button>
+                    <div class="flex items-center gap-4">
+                        <button onclick="window.changeSize(-1)" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-xl hover:text-blue-500 transition-colors">-</button>
+                        <span id="size-display" class="w-8 text-center font-black text-2xl">1</span>
+                        <button onclick="window.changeSize(1)" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-xl hover:text-blue-500 transition-colors">+</button>
                     </div>
                 </div>
             </section>
 
+            <!-- Step 2 -->
             <section class="card p-8">
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-xs font-black uppercase tracking-[0.2em] label-text">Active Roster</h2>
-                    <div class="h-1 w-12 bg-blue-500/20 rounded-full"></div>
-                </div>
-                
+                <h2 class="text-xs font-black uppercase tracking-[0.2em] label-text mb-6">Step 2: Roster</h2>
                 <div id="view-auto">
-                    <textarea id="pool-input" class="input-field w-full p-6 text-sm font-medium leading-relaxed min-h-[250px] placeholder-slate-400 dark:placeholder-slate-600 outline-none" placeholder="PASTE NAMES (ONE PER LINE)..."></textarea>
+                    <textarea id="pool-input" class="input-field w-full min-h-[200px]" placeholder="LIST NAMES HERE..."></textarea>
                 </div>
-
                 <div id="view-manual" class="hidden space-y-4">
                     <div id="manual-list" class="space-y-4"></div>
-                    <button onclick="addTeam()" class="w-full py-5 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl label-text font-black text-xs uppercase tracking-widest hover:border-blue-500/30 hover:text-blue-500 transition-all">+ Add Team Identity</button>
+                    <button onclick="window.addTeam()" class="w-full py-5 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl label-text font-black text-[10px] uppercase tracking-[0.2em] hover:text-blue-500 transition-all">+ Add New Entry</button>
                 </div>
             </section>
 
-            <section class="card p-10 text-center bg-slate-900 dark:bg-blue-600 text-white border-none shadow-2xl shadow-blue-500/20 overflow-hidden relative group transition-colors">
-                <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 dark:text-blue-100 mb-8">Ready for deployment</h2>
-                <button onclick="processAndDownload()" class="btn w-full py-6 bg-white text-slate-900 rounded-3xl font-black text-xl tracking-tighter shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all">
-                    Generate Engine
-                </button>
-                <p class="mt-6 text-[9px] font-black text-blue-300/60 dark:text-blue-100/60 uppercase tracking-[0.2em]">Validated • Standalone • Secure</p>
+            <!-- Step 3 -->
+            <section class="finalize-card">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.4em] mb-8 text-blue-300">Bracket Generator</h2>
+                <button onclick="window.processAndDownload()" class="btn-engine">Download Engine</button>
             </section>
         </div>
     </div>
 
     <script>
-        function toggleTheme() {
-            const body = document.body;
-            body.classList.toggle('dark');
-            const isDark = body.classList.contains('dark');
+        const App = {
+            state: { mode: 'auto', size: 1, manual: [{ id: 1, name: 'TEAM-01', members: '' }, { id: 2, name: 'TEAM-02', members: '' }] },
+            init() { this.render(); },
+            setMode(m) {
+                this.state.mode = m;
+                document.getElementById('tab-auto').classList.toggle('active', m === 'auto');
+                document.getElementById('tab-manual').classList.toggle('active', m === 'manual');
+                document.getElementById('view-auto').classList.toggle('hidden', m !== 'auto');
+                document.getElementById('view-manual').classList.toggle('hidden', m !== 'manual');
+                if (m === 'manual') this.render();
+            },
+            changeSize(d) {
+                this.state.size = Math.max(1, this.state.size + d);
+                document.getElementById('size-display').innerText = this.state.size;
+            },
+            add() {
+                this.state.manual.push({ id: Date.now(), name: `TEAM-${(this.state.manual.length+1).toString().padStart(2,'0')}`, members: '' });
+                this.render();
+            },
+            update(id, f, v) {
+                const t = this.state.manual.find(x => x.id === id);
+                if (t) t[f] = v;
+            },
+            remove(id) {
+                this.state.manual = this.state.manual.filter(x => x.id !== id);
+                this.render();
+            },
+            render() {
+                const c = document.getElementById('manual-list');
+                if (!c) return;
+                c.innerHTML = '';
+                this.state.manual.forEach(t => {
+                    const d = document.createElement('div');
+                    d.className = 'flex gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800';
+                    d.innerHTML = `
+                        <input type="text" value="${t.name}" class="input-field flex-1 p-3 text-xs font-black uppercase" oninput="App.update(${t.id}, 'name', this.value)">
+                        <input type="text" value="${t.members}" class="input-field flex-[2] p-3 text-xs font-bold" oninput="App.update(${t.id}, 'members', this.value)">
+                        <button onclick="App.remove(${t.id})" class="text-red-500 p-2 font-black">×</button>
+                    `;
+                    c.appendChild(d);
+                });
+            },
+            shuffle(a) {
+                for (let p=0; p<3; p++) {
+                    for (let i=a.length-1; i>0; i--) {
+                        const j = Math.floor(Math.random()*(i+1));
+                        [a[i], a[j]] = [a[j], a[i]];
+                    }
+                }
+                return a;
+            },
+            download() {
+                let teams = [];
+                if (this.state.mode === 'auto') {
+                    const raw = document.getElementById('pool-input').value.split('\n').map(n => n.trim()).filter(n => n);
+                    if (raw.length < 2) return alert('Need 2+ names');
+                    const s = this.shuffle(raw);
+                    for (let i=0; i<s.length; i+=this.state.size) {
+                        teams.push({ id: i, name: `TEAM-${(teams.length+1).toString().padStart(2,'0')}`, members: s.slice(i, i+this.state.size) });
+                    }
+                } else {
+                    teams = this.state.manual.filter(x => x.name.trim() && x.members.trim()).map((x, i) => ({ id: i, name: x.name, members: x.members.split(',').map(m => m.trim()).filter(m => m) }));
+                    if (teams.length < 2) return alert('Need 2+ teams');
+                }
+                const bracket = this.build(this.shuffle(teams));
+                const json = JSON.stringify(bracket);
+                
+                // Building HTML in parts to avoid truncation/parsing issues
+                let html = '<html><head><meta charset="UTF-8"><title>Pro Bracket</title><script src="https://cdn.tailwindcss.com"><\/script>';
+                html += '<style>body{background:#020617;font-family:Inter,sans-serif;color:#f1f5f9;margin:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;}.match{background:#0f172a;border:1px solid #1e293b;border-radius:1rem;margin-bottom:1rem;overflow:hidden;}.slot{padding:0.75rem;cursor:pointer;border-left:4px solid transparent;}.winner{background:#1e293b;border-left-color:#3b82f6;}.round-col{flex:1;display:flex;flex-direction:column;justify-content:space-around;padding:2rem 1rem;}#view{display:flex;width:100%;height:100%;transform-origin:center;}</style></head>';
+                html += '<body><header class="text-center py-6 shrink-0"><h1 class="text-2xl font-black uppercase tracking-tighter">Tournament Data</h1></header>';
+                html += '<div id="w" style="flex:1;display:flex;justify-content:center;align-items:center;"><div id="view"></div></div>';
+                html += '<script>const data = ' + json + '; function draw() { const v = document.getElementById("view"); v.innerHTML = ""; data.rounds.forEach((r, ri) => { const col = document.createElement("div"); col.className = "round-col"; const h = document.createElement("p"); h.className = "text-center font-black text-slate-600 uppercase text-[10px] tracking-widest mb-4"; h.innerText = r.name; col.appendChild(h); r.matches.forEach((m, mi) => { const box = document.createElement("div"); box.className = "match"; [m.team1, m.team2].forEach(t => { const win = m.winnerId === (t ? t.id : null); const s = document.createElement("div"); s.className = "slot " + (win ? "winner" : ""); const pri = (t && t.members && t.members.length) ? t.members.join(" & ") : (t ? t.name : "PENDING"); s.innerHTML = \'<div class="font-black text-xs uppercase truncate \' + (win ? "text-blue-400" : (t ? "text-slate-200" : "text-slate-700 italic")) + \'">\' + pri + "</div>"; if(t && !m.winnerId) s.onclick = () => { m.winnerId = t.id; if(ri+1 < data.rounds.length) { const next = data.rounds[ri+1].matches[Math.floor(mi/2)]; if(mi%2===0) next.team1 = t; else next.team2 = t; } draw(); }; box.appendChild(s); }); col.appendChild(box); }); v.appendChild(col); }); fit(); } function fit() { const v = document.getElementById("view"); const w = document.getElementById("w"); v.style.transform = "scale(1)"; const s = Math.min(w.clientWidth/v.scrollWidth, w.clientHeight/v.scrollHeight, 1); v.style.transform = "scale(" + (s*0.95) + ")"; } window.onresize = fit; draw(); <\/script></body></html>';
+                
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'tournament_pro.html'; a.click();
+            },
+            build(teams) {
+                const n = Math.pow(2, Math.ceil(Math.log2(teams.length)));
+                const rounds = [];
+                const r1 = [];
+                for (let i=0; i<n/2; i++) {
+                    const t1 = teams[i*2]||null; const t2 = teams[i*2+1]||null;
+                    r1.push({ team1: t1, team2: t2, winnerId: (t1 && !t2) ? t1.id : null });
+                }
+                rounds.push({ name: 'ROUND 01', matches: r1 });
+                for (let r=1; r<Math.log2(n); r++) {
+                    const ms = [];
+                    for (let m=0; m<n/Math.pow(2,r+1); m++) {
+                        const match = { team1: null, team2: null, winnerId: null };
+                        if (r === 1) {
+                            const p1 = rounds[0].matches[m*2]; const p2 = rounds[0].matches[m*2+1];
+                            if (p1.winnerId) match.team1 = (p1.winnerId === p1.team1.id ? p1.team1 : p1.team2);
+                            if (p2.winnerId) match.team2 = (p2.winnerId === p2.team1.id ? p2.team1 : p2.team2);
+                        }
+                        ms.push(match);
+                    }
+                    rounds.push({ name: r === Math.log2(n)-1 ? 'GRAND FINALS' : 'QUALIFIER ' + (r+1), matches: ms });
+                }
+                return { rounds };
+            }
+        };
+
+        window.App = App;
+        window.setMode = (m) => App.setMode(m);
+        window.changeSize = (d) => App.changeSize(d);
+        window.addTeam = () => App.add();
+        window.processAndDownload = () => App.download();
+        window.toggleTheme = () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
             document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
             document.getElementById('moon-icon').classList.toggle('hidden', isDark);
-        }
-
-        let appState = {
-            mode: 'auto',
-            teamSize: 1,
-            manualTeams: [
-                { id: Date.now(), name: 'Team Alpha', members: '' },
-                { id: Date.now() + 1, name: 'Team Beta', members: '' }
-            ]
         };
-
-        window.setMode = (mode) => {
-            appState.mode = mode;
-            document.getElementById('tab-auto').classList.toggle('active', mode === 'auto');
-            document.getElementById('tab-manual').classList.toggle('active', mode === 'manual');
-            document.getElementById('view-auto').classList.toggle('hidden', mode !== 'auto');
-            document.getElementById('view-manual').classList.toggle('hidden', mode !== 'manual');
-            if (mode === 'manual') renderManualList();
-        };
-
-        window.changeSize = (delta) => {
-            appState.teamSize = Math.max(1, appState.teamSize + delta);
-            document.getElementById('size-display').innerText = appState.teamSize;
-        };
-
-        window.addTeam = () => {
-            appState.manualTeams.push({ id: Date.now(), name: `Identity ${appState.manualTeams.length + 1}`, members: '' });
-            renderManualList();
-        };
-
-        window.removeTeam = (id) => {
-            appState.manualTeams = appState.manualTeams.filter(t => t.id !== id);
-            renderManualList();
-        };
-
-        window.updateTeam = (id, field, value) => {
-            const team = appState.manualTeams.find(t => t.id === id);
-            if (team) team[field] = value;
-        };
-
-        function renderManualList() {
-            const container = document.getElementById('manual-list');
-            container.innerHTML = '';
-            appState.manualTeams.forEach(team => {
-                const div = document.createElement('div');
-                div.className = 'flex gap-4 items-center bg-slate-50 dark:bg-slate-900/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 transition-all';
-                div.innerHTML = `
-                    <input type="text" value="${team.name}" class="input-field flex-1 p-4 text-xs font-black uppercase tracking-tight" placeholder="Team Name" oninput="updateTeam(${team.id}, 'name', this.value)">
-                    <input type="text" value="${team.members}" class="input-field flex-[2] p-4 text-xs font-medium" placeholder="MEMBERS (COMMA SEPARATED)" oninput="updateTeam(${team.id}, 'members', this.value)">
-                    <button onclick="removeTeam(${team.id})" class="label-text hover:text-red-500 p-2 font-black transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3" stroke-linecap="round"/></svg>
-                    </button>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function highEntropyShuffle(array) {
-            const arr = [...array];
-            for (let pass = 0; pass < 3; pass++) {
-                for (let i = arr.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [arr[i], arr[j]] = [arr[j], arr[i]];
-                }
-            }
-            return arr;
-        }
-
-        window.processAndDownload = () => {
-            let teams = [];
-            if (appState.mode === 'auto') {
-                let names = document.getElementById('pool-input').value.split('\n').map(n => n.trim()).filter(n => n);
-                if (names.length < 2) return alert('Please enter at least 2 names.');
-                names = highEntropyShuffle(names);
-                for (let i = 0; i < names.length; i += appState.teamSize) {
-                    teams.push({ id: (i/appState.teamSize) + 1, name: `Team ${(i/appState.teamSize) + 1}`, members: names.slice(i, i + appState.teamSize) });
-                }
-            } else {
-                teams = appState.manualTeams.filter(t => t.name.trim() && t.members.trim()).map((t, idx) => ({ id: idx + 1, name: t.name, members: t.members.split(',').map(m => m.trim()).filter(m => m) }));
-                if (teams.length < 2) return alert('Please add at least 2 teams with members.');
-            }
-            teams = highEntropyShuffle(teams);
-            const bracketData = buildBracketData(teams);
-            const html = generateOutputHTML(bracketData);
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'tournament_hub_pro.html'; a.click();
-        };
-
-        function buildBracketData(teams) {
-            const n = teams.length;
-            const nextPow2 = Math.pow(2, Math.ceil(Math.log2(n)));
-            const rounds = [];
-            const r1 = [];
-            for (let i = 0; i < nextPow2 / 2; i++) {
-                const t1 = teams[i * 2] || null;
-                const t2 = teams[i * 2 + 1] || null;
-                r1.push({ team1: t1, team2: t2, winnerId: (t1 && !t2) ? t1.id : null });
-            }
-            rounds.push({ name: 'Opening Phase', matches: r1 });
-            const numRounds = Math.log2(nextPow2);
-            for (let r = 1; r < numRounds; r++) {
-                const matchCount = nextPow2 / Math.pow(2, r + 1);
-                const matches = [];
-                for (let m = 0; m < matchCount; m++) {
-                    const match = { team1: null, team2: null, winnerId: null };
-                    if (r === 1) {
-                        const p1 = rounds[0].matches[m*2]; const p2 = rounds[0].matches[m*2+1];
-                        if (p1.winnerId) match.team1 = (p1.winnerId === p1.team1.id ? p1.team1 : p1.team2);
-                        if (p2.winnerId) match.team2 = (p2.winnerId === p2.team1.id ? p2.team1 : p2.team2);
-                    }
-                    matches.push(match);
-                }
-                const name = r === numRounds - 1 ? 'Grand Finals' : r === numRounds - 2 ? 'Semi-Finals' : `Qualifiers ${r+1}`;
-                rounds.push({ name, matches });
-            }
-            return { rounds };
-        }
-
-        function generateOutputHTML(data) {
-            const json = JSON.stringify(data);
-            return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Tournament Bracket | Pro</title>
-    <script src="https://cdn.tailwindcss.com"><\/script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { 
-            background: #020617; 
-            font-family: 'Inter', sans-serif; 
-            color: #f1f5f9; 
-            margin: 0; 
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .match { 
-            background: #0f172a; 
-            border: 1px solid #1e293b; 
-            border-radius: 1rem; 
-            overflow: hidden; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-            width: 100%;
-        }
-        .slot { padding: 0.75rem; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
-        .slot:hover { background: #1e293b; }
-        .winner { background: #1e293b; border-left-color: #3b82f6; }
-        .round-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-around; gap: 1rem; padding: 2rem 0.5rem; }
-        #bracket-wrapper {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            min-height: 0;
-        }
-        #view {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            transform-origin: center center;
-        }
-    </style>
-</head>
-<body>
-    <header class="text-center pt-8 pb-4 shrink-0">
-        <h1 class="text-2xl font-black tracking-tighter uppercase">Tournament<span class="text-blue-500">.</span>Data</h1>
-        <div id="status" class="inline-block px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[8px] font-black uppercase tracking-[0.3em] text-blue-400">Auto-Fit View</div>
-    </header>
-    
-    <div id="bracket-wrapper">
-        <div id="view"></div>
-    </div>
-
-    <script>
-        const data = ${json};
-        function draw() {
-            const v = document.getElementById('view'); v.innerHTML = '';
-            
-            data.rounds.forEach((r, ri) => {
-                const col = document.createElement('div');
-                col.className = 'round-col';
-                
-                const h = document.createElement('p');
-                h.className = 'text-center font-black text-slate-600 uppercase text-[8px] tracking-[0.3em] mb-4 shrink-0';
-                h.innerText = r.name;
-                col.appendChild(h);
-
-                r.matches.forEach((m, mi) => {
-                    const box = document.createElement('div');
-                    box.className = 'match';
-                    [m.team1, m.team2].forEach(t => {
-                        const win = m.winnerId === (t ? t.id : null);
-                        const s = document.createElement('div');
-                        s.className = 'slot ' + (win ? 'winner' : '');
-                        
-                        const pri = (t && t.members && t.members.length) ? t.members.join(' & ') : (t ? t.name : 'PENDING');
-                        const sec = (t && t.members && t.members.length) ? t.name : '';
-                        
-                        s.innerHTML = '<div class="font-black text-[10px] uppercase tracking-tight truncate ' + (win ? 'text-blue-400' : (t ? 'text-slate-200' : 'text-slate-700 italic')) + '">' + pri + '</div>' + 
-                                      (sec ? '<div class="text-[7px] font-black text-slate-500 uppercase tracking-[0.1em] mt-0.5 truncate">' + sec + '</div>' : '');
-                        
-                        if(t && !m.winnerId) s.onclick = () => {
-                            m.winnerId = t.id;
-                            if(ri + 1 < data.rounds.length) {
-                                const nextIdx = Math.floor(mi / 2);
-                                const nextMatch = data.rounds[ri+1].matches[nextIdx];
-                                if(mi % 2 === 0) nextMatch.team1 = t; else nextMatch.team2 = t;
-                            }
-                            draw();
-                        };
-                        box.appendChild(s);
-                    });
-                    col.appendChild(box);
-                });
-                v.appendChild(col);
-            });
-            fitToScreen();
-        }
-
-        function fitToScreen() {
-            const v = document.getElementById('view');
-            const wrapper = document.getElementById('bracket-wrapper');
-            v.style.transform = 'scale(1)';
-            
-            const vWidth = v.scrollWidth;
-            const vHeight = v.scrollHeight;
-            const wWidth = wrapper.clientWidth;
-            const wHeight = wrapper.clientHeight;
-            
-            const scale = Math.min(wWidth / vWidth, wHeight / vHeight, 1);
-            v.style.transform = 'scale(' + (scale * 0.95) + ')';
-        }
-
-        window.onresize = fitToScreen;
-        draw();
-    <\/script>
-</body>
-</html>`;
-        }
+        window.onload = () => App.init();
     </script>
 </body>
 </html>
