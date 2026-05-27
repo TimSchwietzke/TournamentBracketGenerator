@@ -1,3 +1,9 @@
+/* 
+ * Tournament Live Generator - Stylesheet
+ * Purpose: Defines CSS custom properties, styling tokens, responsive grids,
+ * transitions, next-game banner layout, and bracket column spacing for live execution.
+ */
+
 :root {
     --bg: #f8fafc;
     --card: #ffffff;

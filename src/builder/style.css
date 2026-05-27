@@ -1,3 +1,9 @@
+/* 
+ * Tournament Bracket Builder - Stylesheet
+ * Purpose: Defines CSS custom properties (variables), design tokens, typography,
+ * layout settings, and theme styles for the tournament setup and generator interface.
+ */
+
 :root {
     --bg: #f8fafc;
     --card: #ffffff;

@@ -1,41 +1,12 @@
-const I18N = {
-    de: {
-        subTitle: "Setup & Compiler",
-        setupTitle: "1. Modus & Größe",
-        autoPool: "Auto-Pool",
-        directEntry: "Direkt",
-        teamSize: "Team-Größe",
-        peoplePerTeam: "Personen / Team",
-        rosterTitle: "2. Teilnehmer",
-        poolPlaceholder: "Namen hier eingeben (einer pro Zeile)...",
-        addTeam: "+ Hinzufügen",
-        step3Title: "Compiler Engine",
-        downloadBtn: "Engine Herunterladen",
-        needTwoNames: "Mind. 2 Namen nötig.",
-        needTwoTeams: "Mind. 2 Teams nötig.",
-        teamPlaceholder: "Team Name",
-        membersPlaceholder: "Mitglieder (kommagetrennt)"
-    },
-    en: {
-        subTitle: "Setup & Compiler",
-        setupTitle: "1. Mode & Size",
-        autoPool: "Auto-Pool",
-        directEntry: "Direct",
-        teamSize: "Team Size",
-        peoplePerTeam: "People / Team",
-        rosterTitle: "2. Roster",
-        poolPlaceholder: "Enter names here (one per line)...",
-        addTeam: "+ Add Entry",
-        step3Title: "Compiler Engine",
-        downloadBtn: "Download Engine",
-        needTwoNames: "At least 2 names required.",
-        needTwoTeams: "At least 2 teams required.",
-        teamPlaceholder: "Team Name",
-        membersPlaceholder: "Members (comma separated)"
-    }
-};
+/**
+ * Tournament Bracket Builder - Core Logic
+ * Purpose: Manages state, event handlers, and input parsing for the setup view.
+ * Compiles and downloads a standalone tournament live-engine with embedded data.
+ * References: window.I18N and window.BracketGenerator
+ */
 
 const App = {
+    // Application state
     state: { 
         mode: 'auto', 
         size: 1, 
@@ -46,12 +17,19 @@ const App = {
         lang: 'de'
     },
     
+    /**
+     * Initialisiert die Anwendung, lädt die Spracheinstellung und wendet sie an.
+     */
     init() { 
         const savedLang = localStorage.getItem('tbg_lang') || 'de';
         this.state.lang = savedLang;
         this.setLanguage(this.state.lang);
     },
 
+    /**
+     * Setzt die aktive Sprache der Benutzeroberfläche und speichert die Auswahl.
+     * @param {string} lang - Die gewählte Sprache ('de' oder 'en').
+     */
     setLanguage(lang) {
         this.state.lang = lang;
         localStorage.setItem('tbg_lang', lang);
@@ -76,10 +54,17 @@ const App = {
         this.render();
     },
 
+    /**
+     * Wechselt zwischen den unterstützten Sprachen (Deutsch/Englisch).
+     */
     toggleLang() {
         this.setLanguage(this.state.lang === 'de' ? 'en' : 'de');
     },
 
+    /**
+     * Ändert den Eingabemodus für Teams (Auto-Pool vs. Direkt).
+     * @param {string} m - Der ausgewählte Modus ('auto' oder 'manual').
+     */
     setMode(m) {
         this.state.mode = m;
         document.getElementById('tab-auto').classList.toggle('active', m === 'auto');
@@ -89,26 +74,50 @@ const App = {
         if (m === 'manual') this.render();
     },
 
+    /**
+     * Ändert die Gruppengröße für die automatische Teamgenerierung.
+     * @param {number} d - Differenzwert (in der Regel +1 oder -1).
+     */
     changeSize(d) {
         this.state.size = Math.max(1, this.state.size + d);
         document.getElementById('size-display').innerText = this.state.size;
     },
 
+    /**
+     * Fügt ein neues leeres Team-Objekt zur manuellen Liste hinzu.
+     */
     add() {
-        this.state.manual.push({ id: Date.now(), name: `TEAM-${(this.state.manual.length+1).toString().padStart(2,'0')}`, members: '' });
+        this.state.manual.push({ 
+            id: Date.now(), 
+            name: `TEAM-${(this.state.manual.length+1).toString().padStart(2,'0')}`, 
+            members: '' 
+        });
         this.render();
     },
 
+    /**
+     * Aktualisiert den Wert eines bestimmten Feldes eines manuellen Teams.
+     * @param {number} id - ID des zu aktualisierenden Teams.
+     * @param {string} f - Name des Feldes ('name' oder 'members').
+     * @param {string} v - Neuer Wert.
+     */
     update(id, f, v) {
         const t = this.state.manual.find(x => x.id === id);
         if (t) t[f] = v;
     },
 
+    /**
+     * Entfernt ein Team aus der manuellen Liste.
+     * @param {number} id - ID des zu entfernenden Teams.
+     */
     remove(id) {
         this.state.manual = this.state.manual.filter(x => x.id !== id);
         this.render();
     },
 
+    /**
+     * Rendert die Liste der manuell erstellten Teams in der Benutzeroberfläche.
+     */
     render() {
         const c = document.getElementById('manual-list');
         if (!c) return;
@@ -125,6 +134,11 @@ const App = {
         });
     },
 
+    /**
+     * Mischt ein Array nach dem Fisher-Yates-Algorithmus (3 Durchgänge für optimale Durchmischung).
+     * @param {Array} a - Das zu mischende Array.
+     * @returns {Array} Das gemischte Array.
+     */
     shuffle(a) {
         for (let p=0; p<3; p++) {
             for (let i=a.length-1; i>0; i--) {
@@ -135,27 +149,82 @@ const App = {
         return a;
     },
 
-    download() {
-        let teams = [];
+    /**
+     * Generiert Teams automatisch aus der eingegebenen Namensliste.
+     * @param {Array} raw - Bereinigte Namensliste.
+     * @returns {Array} Array von Team-Objekten.
+     */
+    createTeamsFromPool(raw) {
+        const s = this.shuffle([...raw]);
+        const teams = [];
+        for (let i = 0; i < s.length; i += this.state.size) {
+            teams.push({
+                id: `t-${i}`,
+                name: `TEAM-${(teams.length + 1).toString().padStart(2, '0')}`,
+                members: s.slice(i, i + this.state.size)
+            });
+        }
+        return teams;
+    },
+
+    /**
+     * Liest die Teams basierend auf dem gewählten Modus ein.
+     * @returns {Array|null} Array von Team-Objekten oder null bei Validierungsfehlern.
+     */
+    getTeamsFromInput() {
         const t = I18N[this.state.lang];
         if (this.state.mode === 'auto') {
             const raw = document.getElementById('pool-input').value.split('\n').map(n => n.trim()).filter(n => n);
-            if (raw.length < 2) return alert(t.needTwoNames);
-            const s = this.shuffle([...raw]);
-            for (let i=0; i<s.length; i+=this.state.size) {
-                teams.push({ id: `t-${i}`, name: `TEAM-${(teams.length+1).toString().padStart(2,'0')}`, members: s.slice(i, i+this.state.size) });
+            if (raw.length < 2) {
+                alert(t.needTwoNames);
+                return null;
             }
-        } else {
-            teams = this.state.manual.filter(x => x.name.trim() && x.members.trim()).map((x, i) => ({ id: `tm-${i}`, name: x.name, members: x.members.split(',').map(m => m.trim()).filter(m => m) }));
-            if (teams.length < 2) return alert(t.needTwoTeams);
+            return this.createTeamsFromPool(raw);
         }
-        
+        const teams = this.state.manual
+            .filter(x => x.name.trim() && x.members.trim())
+            .map((x, i) => ({
+                id: `tm-${i}`,
+                name: x.name,
+                members: x.members.split(',').map(m => m.trim()).filter(m => m)
+            }));
+        if (teams.length < 2) {
+            alert(t.needTwoTeams);
+            return null;
+        }
+        return teams;
+    },
+
+    /**
+     * Startet den Download der fertig compilierten eigenständigen HTML-Datei.
+     * Generiert das Turniertree und bettet es in das HTML-Template ein.
+     */
+    download() {
+        const teams = this.getTeamsFromInput();
+        if (!teams) return;
+
         const shuffledTeams = this.shuffle([...teams]);
-        const bracket = this.build(shuffledTeams);
+        const bracket = BracketGenerator.build(shuffledTeams);
         const jsonTeams = JSON.stringify(shuffledTeams);
         const jsonBracket = JSON.stringify(bracket);
-        
-        let html = `<!DOCTYPE html>
+
+        const html = this.getEmbeddedTemplate(jsonTeams, jsonBracket);
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tournament_pro.html';
+        a.click();
+    },
+
+    /**
+     * Gibt das HTML-Template für die eigenständige Live-Turnier-App zurück.
+     * @param {string} jsonTeams - Teams als JSON-String.
+     * @param {string} jsonBracket - Turniertree als JSON-String.
+     * @returns {string} Das komplette compilierte HTML.
+     */
+    getEmbeddedTemplate(jsonTeams, jsonBracket) {
+        return `<!DOCTYPE html>
 <html lang="${this.state.lang}">
 <head>
     <meta charset="UTF-8">
@@ -381,6 +450,11 @@ const App = {
     </div>
 
     <script>
+        /**
+         * Standalone Tournament Live Engine - Javascript Logic
+         * Purpose: Manages live tournament execution, scoring, roster swapping, and view updates.
+         */
+
         const I18N = {
             de: {
                 nextGame: "Nächstes Spiel",
@@ -417,6 +491,7 @@ const App = {
         };
 
         const App = {
+            // Live-Engine state containing imported parameters
             state: {
                 teams: ${jsonTeams},
                 bracket: ${jsonBracket},
@@ -424,6 +499,9 @@ const App = {
                 editingTeamId: null
             },
 
+            /**
+             * Initialisiert die Live-Engine und verknüpft Team-Referenzen.
+             */
             init() {
                 this.state.bracket.rounds.forEach(round => {
                     round.matches.forEach(match => {
@@ -436,13 +514,16 @@ const App = {
                 this.setLanguage(this.state.lang);
             },
 
+            /**
+             * Setzt die aktive Sprache der Live-Engine.
+             * @param {string} lang - Gewählte Sprache ('de' oder 'en').
+             */
             setLanguage(lang) {
                 this.state.lang = lang;
                 const t = I18N[lang];
                 
                 document.getElementById('teams-title').innerText = t.teamsTitle;
                 document.getElementById('next-game-label').innerText = t.nextGame;
-                
                 document.getElementById('modal-title').innerText = t.editTeamTitle;
                 document.getElementById('modal-label-name').innerText = t.teamNamePlaceholder;
                 document.getElementById('modal-label-members').innerText = t.membersPlaceholder;
@@ -458,10 +539,17 @@ const App = {
                 this.renderTournament();
             },
 
+            /**
+             * Wechselt die Sprache zwischen DE und EN.
+             */
             toggleLang() {
                 this.setLanguage(this.state.lang === 'de' ? 'en' : 'de');
             },
 
+            /**
+             * Öffnet das Modal zum Bearbeiten eines Teams.
+             * @param {string|number} teamId - ID des zu bearbeitenden Teams.
+             */
             openEditModal(teamId) {
                 const team = this.state.teams.find(t => t.id === teamId);
                 if (!team) return;
@@ -473,11 +561,17 @@ const App = {
                 document.getElementById('edit-modal').classList.remove('hidden');
             },
 
+            /**
+             * Schließt das Modal zum Bearbeiten.
+             */
             closeEditModal() {
                 this.state.editingTeamId = null;
                 document.getElementById('edit-modal').classList.add('hidden');
             },
 
+            /**
+             * Speichert die Änderungen am Namen und der Besetzung des Teams.
+             */
             saveTeamEdit() {
                 const teamId = this.state.editingTeamId;
                 if (!teamId) return;
@@ -495,8 +589,11 @@ const App = {
                 this.closeEditModal();
             },
 
-            renderTournament() {
-                const t = I18N[this.state.lang];
+            /**
+             * Rendert die Team-Kacheln in der Kader-Sektion.
+             * @param {object} t - Übersetzungs-Wörterbuch.
+             */
+            renderTeams(t) {
                 const teamsDiv = document.getElementById('teams-display');
                 teamsDiv.innerHTML = '';
                 this.state.teams.forEach(teamObj => {
@@ -514,75 +611,140 @@ const App = {
                     \`;
                     teamsDiv.appendChild(b);
                 });
+            },
 
-                const nextMatchInfo = this.findNextMatch();
-                this.renderNextGame(nextMatchInfo);
-
+            /**
+             * Hilfsfunktion zum Rendern des gesamten Turniertrees.
+             * @param {object} t - Übersetzungs-Wörterbuch.
+             * @param {object|null} nextMatchInfo - Meta-Daten zum nächsten anstehenden Match.
+             */
+            renderBracket(t, nextMatchInfo) {
                 const root = document.getElementById('bracket-root');
                 root.innerHTML = '';
                 this.state.bracket.rounds.forEach((round, rIdx) => {
-                    const col = document.createElement('div');
-                    col.className = 'round-col';
-                    
-                    let roundName = '';
-                    const totalRounds = this.state.bracket.rounds.length;
-                    if (rIdx === totalRounds - 1) {
-                        roundName = t.grandFinals;
-                    } else {
-                        roundName = t.roundName.replace('{n}', rIdx + 1);
-                    }
-                    col.innerHTML = \`<div class="text-center font-black text-slate-400 uppercase text-[8px] tracking-widest mb-4">\${roundName}</div>\`;
-                    
-                    round.matches.forEach((match, mIdx) => {
-                        const box = document.createElement('div');
-                        const isNext = nextMatchInfo && nextMatchInfo.match.id === match.id;
-                        box.className = \`match \${isNext ? 'highlight-next' : ''}\`;
-                        
-                        [match.team1, match.team2].forEach((team, tIdx) => {
-                            const isSecondSlot = tIdx === 1;
-                            const isByeSlot = !team && (rIdx === 0 && ((isSecondSlot && match.team1 && !match.team2) || (!isSecondSlot && !match.team1 && match.team2)));
-                            const win = match.winner && team && match.winner.id === team.id;
-                            const slot = document.createElement('div');
-                            slot.className = \`slot \${win ? 'winner' : ''}\`;
-                            
-                            const nameLabel = team ? team.name : (isByeSlot ? t.bye : t.tbd);
-                            const membersLabel = team ? team.members.join(', ') : '';
-
-                            slot.innerHTML = \`
-                                <div class="flex justify-between items-center relative pr-4">
-                                    <div class="flex flex-col truncate">
-                                        <span class="text-[10px] font-black uppercase truncate \${team ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 italic'\}">\${membersLabel || nameLabel}</span>
-                                        \${team ? \`<span class="text-[8px] font-bold text-blue-500 uppercase tracking-tighter">\${nameLabel}</span>\` : ''}
-                                    </div>
-                                    \${team ? \`<button onclick="event.stopPropagation(); App.openEditModal('\${team.id}')" class="text-slate-400 hover:text-blue-500 text-[8px] absolute right-0">✏️</button>\` : ''}
-                                </div>
-                            \`;
-                            
-                            if (team && !match.winner) {
-                                slot.onclick = () => this.setWinner(rIdx, mIdx, team);
-                            } else if (win) {
-                                slot.onclick = () => this.setWinner(rIdx, mIdx, null);
-                            }
-                            box.appendChild(slot);
-                        });
-                        col.appendChild(box);
-                    });
+                    const col = this.renderRoundCol(round, rIdx, t, nextMatchInfo);
                     root.appendChild(col);
                 });
             },
 
+            /**
+             * Hilfsfunktion zum Erstellen einer Spalte (Runde) im Bracket.
+             * @param {object} round - Runden-Objekt mit Matches.
+             * @param {number} rIdx - Runden-Index.
+             * @param {object} t - Übersetzungs-Wörterbuch.
+             * @param {object|null} nextMatchInfo - Nächstes Match.
+             * @returns {HTMLElement} Die erstellte Spalte.
+             */
+            renderRoundCol(round, rIdx, t, nextMatchInfo) {
+                const col = document.createElement('div');
+                col.className = 'round-col';
+                
+                let roundName = rIdx === this.state.bracket.rounds.length - 1 
+                    ? t.grandFinals 
+                    : t.roundName.replace('{n}', rIdx + 1);
+                
+                col.innerHTML = \`<div class="text-center font-black text-slate-400 uppercase text-[8px] tracking-widest mb-4">\${roundName}</div>\`;
+                
+                round.matches.forEach((match, mIdx) => {
+                    const box = this.renderMatchBox(match, mIdx, rIdx, t, nextMatchInfo);
+                    col.appendChild(box);
+                });
+                return col;
+            },
+
+            /**
+             * Hilfsfunktion zum Erstellen einer einzelnen Match-Kachel (Box).
+             * @param {object} match - Match-Objekt.
+             * @param {number} mIdx - Match-Index innerhalb der Runde.
+             * @param {number} rIdx - Runden-Index.
+             * @param {object} t - Übersetzungs-Wörterbuch.
+             * @param {object|null} nextMatchInfo - Nächstes Match.
+             * @returns {HTMLElement} Der Match-Container.
+             */
+            renderMatchBox(match, mIdx, rIdx, t, nextMatchInfo) {
+                const box = document.createElement('div');
+                const isNext = nextMatchInfo && nextMatchInfo.match.id === match.id;
+                box.className = \`match \${isNext ? 'highlight-next' : ''}\`;
+                
+                [match.team1, match.team2].forEach((team, tIdx) => {
+                    const slot = this.renderSlot(match, mIdx, rIdx, team, tIdx, t);
+                    box.appendChild(slot);
+                });
+                return box;
+            },
+
+            /**
+             * Erstellt einen Team-Slot (Zeile) innerhalb eines Matches.
+             * @param {object} match - Das Match.
+             * @param {number} mIdx - Match-Index.
+             * @param {number} rIdx - Runden-Index.
+             * @param {object|null} team - Team in diesem Slot.
+             * @param {number} tIdx - Slot-Index (0 für Team 1, 1 für Team 2).
+             * @param {object} t - Übersetzungs-Wörterbuch.
+             * @returns {HTMLElement} Der Slot-Container.
+             */
+            renderSlot(match, mIdx, rIdx, team, tIdx, t) {
+                const isSecondSlot = tIdx === 1;
+                const isByeSlot = !team && (rIdx === 0 && ((isSecondSlot && match.team1 && !match.team2) || (!isSecondSlot && !match.team1 && match.team2)));
+                const win = match.winner && team && match.winner.id === team.id;
+                const slot = document.createElement('div');
+                slot.className = \`slot \${win ? 'winner' : ''}\`;
+                
+                const nameLabel = team ? team.name : (isByeSlot ? t.bye : t.tbd);
+                const membersLabel = team ? team.members.join(', ') : '';
+
+                slot.innerHTML = \`
+                    <div class="flex justify-between items-center relative pr-4">
+                        <div class="flex flex-col truncate">
+                            <span class="text-[10px] font-black uppercase truncate \${team ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 italic'\}">\${membersLabel || nameLabel}</span>
+                            \${team ? \`<span class="text-[8px] font-bold text-blue-500 uppercase tracking-tighter">\${nameLabel}</span>\` : ''}
+                        </div>
+                        \${team ? \`<button onclick="event.stopPropagation(); App.openEditModal('\${team.id}')" class="text-slate-400 hover:text-blue-500 text-[8px] absolute right-0">✏️</button>\` : ''}
+                    </div>
+                \`;
+                
+                if (team && !match.winner) {
+                    slot.onclick = () => this.setWinner(rIdx, mIdx, team);
+                } else if (win) {
+                    slot.onclick = () => this.setWinner(rIdx, mIdx, null);
+                }
+                return slot;
+            },
+
+            /**
+             * Haupt-Rendermethode für das gesamte Live-Turnier.
+             */
+            renderTournament() {
+                const t = I18N[this.state.lang];
+                this.renderTeams(t);
+                const nextMatchInfo = this.findNextMatch();
+                this.renderNextGame(nextMatchInfo);
+                this.renderBracket(t, nextMatchInfo);
+            },
+
+            /**
+             * Ermittelt das nächste anstehende aktive Spiel (beide Teams gesetzt, kein Gewinner).
+             * @returns {object|null} Match-Infos oder null.
+             */
             findNextMatch() {
                 for (let r = 0; r < this.state.bracket.rounds.length; r++) {
                     const round = this.state.bracket.rounds[r];
                     for (const match of round.matches) {
                         if (!match.winner && match.team1 && match.team2) {
-                            return { roundName: I18N[this.state.lang].roundName.replace('{n}', r + 1), match };
+                            return { 
+                                roundName: I18N[this.state.lang].roundName.replace('{n}', r + 1), 
+                                match 
+                            };
                         }
                     }
                 }
                 return null;
             },
 
+            /**
+             * Rendert das Info-Banner des nächsten anstehenden Spiels.
+             * @param {object|null} info - Match-Infos.
+             */
             renderNextGame(info) {
                 const container = document.getElementById('next-game-container');
                 if (!info) {
@@ -601,6 +763,12 @@ const App = {
                 document.getElementById('next-team2-members').innerText = info.match.team2.name;
             },
 
+            /**
+             * Setzt oder löscht den Sieger eines Matches und aktualisiert Folge-Slots.
+             * @param {number} rIdx - Runden-Index.
+             * @param {number} mIdx - Match-Index.
+             * @param {object|null} team - Siegerteam oder null zum Zurücksetzen.
+             */
             setWinner(rIdx, mIdx, team) {
                 const match = this.state.bracket.rounds[rIdx].matches[mIdx];
                 match.winner = team;
@@ -617,6 +785,12 @@ const App = {
                 this.renderTournament();
             },
 
+            /**
+             * Rekursive Funktion zum Löschen von nachfolgenden Slots bei Sieger-Rücknahme.
+             * @param {number} rIdx - Runden-Index des betroffenen Folge-Matches.
+             * @param {number} mIdx - Match-Index des betroffenen Folge-Matches.
+             * @param {boolean} isT1 - Gibt an, ob Team 1 (true) oder Team 2 (false) gelöscht werden soll.
+             */
             clearDownstream(rIdx, mIdx, isT1) {
                 const m = this.state.bracket.rounds[rIdx].matches[mIdx];
                 if (isT1) m.team1 = null; else m.team2 = null;
@@ -626,6 +800,9 @@ const App = {
                 }
             },
 
+            /**
+             * Toggles dark mode class on the document body and updates icons.
+             */
             toggleTheme() {
                 document.body.classList.toggle('dark');
                 const isDark = document.body.classList.contains('dark');
@@ -640,60 +817,6 @@ const App = {
     <\/script>
 </body>
 </html>`;
-        
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'tournament_pro.html'; a.click();
-    },
-
-    build(teams) {
-        const count = teams.length;
-        if (count < 2) return null;
-
-        const rCount = Math.ceil(Math.log2(count));
-        const bSize = Math.pow(2, rCount);
-        
-        const byeCount = bSize - count;
-        const activeTeamsCount = 2 * count - bSize;
-
-        const r1 = [];
-        let teamIndex = 0;
-        
-        for (let i = 0; i < bSize / 2; i++) {
-            let team1 = null;
-            let team2 = null;
-            let winner = null;
-
-            if (teamIndex < activeTeamsCount) {
-                team1 = teams[teamIndex++];
-                team2 = teams[teamIndex++];
-            } else if (teamIndex < count) {
-                team1 = teams[teamIndex++];
-                team2 = null; // BYE
-                winner = team1; // Advances automatically
-            }
-
-            r1.push({ id: `r0-m${i}`, team1, team2, winner });
-        }
-
-        const rounds = [{ matches: r1 }];
-
-        for (let r = 1; r < rCount; r++) {
-            const matches = [];
-            for (let m = 0; m < bSize / Math.pow(2, r + 1); m++) {
-                const match = { id: `r${r}-m${m}`, team1: null, team2: null, winner: null };
-                
-                const p1 = rounds[r-1].matches[m*2];
-                const p2 = rounds[r-1].matches[m*2 + 1];
-                
-                if (p1.winner) match.team1 = p1.winner;
-                if (p2.winner) match.team2 = p2.winner;
-
-                matches.push(match);
-            }
-            rounds.push({ matches });
-        }
-        return { rounds };
     }
 };
 
