@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tournament Pro - Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark px-4 py-8">
+
+    <div class="bg-glow" style="top: -20%; left: -20%;"></div>
+
+    <!-- THEME TOGGLE -->
+    <button class="theme-toggle" onclick="window.toggleTheme()">
+        <svg id="sun-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20" style="color: #fbbf24;"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        <svg id="moon-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style="color: #818cf8;"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+    </button>
+
+    <div class="max-w-xl mx-auto">
+        <!-- Brand -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black uppercase tracking-tighter">Bracket<span class="accent-text">Builder</span></h1>
+                    <p class="text-[9px] font-bold label-text uppercase tracking-[0.2em]" id="brand-sub">Setup & Compiler</p>
+                </div>
+            </div>
+            <!-- Language Select -->
+            <button onclick="App.toggleLang()" class="lang-btn p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">EN</button>
+        </div>
+
+        <div id="app" class="space-y-6">
+            <!-- Step 1 -->
+            <section class="card p-5 sm:p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="setup-title">1. Modus & Größe</h2>
+                <div class="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6">
+                    <button id="tab-auto" class="tab active flex-1" onclick="window.setMode('auto')">Auto-Pool</button>
+                    <button id="tab-manual" class="tab flex-1" onclick="window.setMode('manual')">Direkt</button>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div>
+                        <p class="font-black text-xs uppercase" id="size-title">Team-Größe</p>
+                        <p class="text-[9px] font-bold label-text uppercase mt-0.5" id="size-sub">Personen / Team</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="window.changeSize(-1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">-</button>
+                        <span id="size-display" class="w-6 text-center font-black text-xl">1</span>
+                        <button onclick="window.changeSize(1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">+</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2 -->
+            <section class="card p-5 sm:p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="roster-title">2. Teilnehmer</h2>
+                <div id="view-auto">
+                    <textarea id="pool-input" class="input-field min-h-[180px]" placeholder="Namen hier eingeben (einer pro Zeile)..."></textarea>
+                </div>
+                <div id="view-manual" class="hidden space-y-4">
+                    <div id="manual-list" class="space-y-3"></div>
+                    <button id="btn-add-manual" onclick="window.addTeam()" class="w-full py-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl label-text font-black text-[9px] uppercase tracking-[0.2em] hover:text-blue-500 transition-all">+ Hinzufügen</button>
+                </div>
+            </section>
+
+            <!-- Step 3 -->
+            <section class="finalize-card">
+                <h2 class="text-[9px] font-black uppercase tracking-[0.4em] mb-4 text-blue-300 dark:text-blue-200" id="step3-title">Compiler Engine</h2>
+                <button onclick="window.processAndDownload()" class="btn-engine shadow-lg" id="btn-download">Download Engine</button>
+            </section>
+        </div>
+    </div>
+
+    <script src="app.js" defer></script>
+</body>
+</html>

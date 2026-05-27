@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tournament Pro - Live Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #3b82f6;
+            --input-bg: #f1f5f9;
+        }
+        .dark {
+            --bg: #020617;
+            --card: #0f172a;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --accent: #60a5fa;
+            --input-bg: #1e293b;
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            transition: background 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1, h2, h3, h4, p, span, div, textarea, input { color: var(--text); }
+        .label-text { color: var(--text-muted) !important; }
+        .accent-text { color: var(--accent) !important; }
+
+        .card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .input-field {
+            background-color: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+            color: var(--text) !important;
+            padding: 0.75rem;
+            outline: none;
+            width: 100%;
+            font-size: 16px; /* Prevents iOS zoom */
+        }
+        .input-field:focus { background-color: var(--card); border-color: var(--accent); }
+
+        .tab {
+            cursor: pointer;
+            padding: 0.6rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted) !important;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+            font-size: 0.875rem;
+        }
+        .tab.active {
+            background-color: var(--card);
+            color: var(--accent) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            border-radius: 99px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white !important;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: 800;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+
+        /* Next Game Display */
+        .next-game-banner {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white !important;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+        .next-game-banner * { color: white !important; }
+
+        /* Bracket Styles */
+        .match {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            width: 200px;
+            flex-shrink: 0;
+            transition: border-color 0.3s;
+        }
+        .match.highlight-next {
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+        .slot {
+            padding: 0.6rem;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .slot.winner {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left-color: var(--accent);
+        }
+        .round-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 0 1rem;
+            min-width: 220px;
+        }
+        .bracket-container {
+            display: flex;
+            overflow-x: auto;
+            padding: 1rem;
+            min-height: 400px;
+            align-items: center;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 640px) {
+            .manual-entry-row {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .manual-entry-row button {
+                align-self: flex-end;
+                padding: 0.5rem;
+            }
+            .round-col { padding: 0 0.5rem; min-width: 180px; }
+            .match { width: 170px; }
+            .theme-toggle { bottom: 1rem; right: 1rem; }
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 100vw;
+            height: 100vw;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            opacity: 0.03;
+            filter: blur(60px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="dark">
+
+    <div class="bg-glow" style="top: -20%; left: -20%;"></div>
+
+    <!-- THEME TOGGLE -->
+    <button class="theme-toggle" onclick="window.toggleTheme()">
+        <svg id="sun-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20" style="color: #fbbf24;"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        <svg id="moon-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style="color: #818cf8;"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+    </button>
+
+    <!-- SETUP VIEW -->
+    <div id="setup-view" class="max-w-xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black uppercase tracking-tighter">Tournament<span class="accent-text">Gen</span></h1>
+                    <p class="text-[9px] font-bold label-text uppercase tracking-[0.2em]" id="brand-sub">Setup & Roster</p>
+                </div>
+            </div>
+            <!-- Language Select -->
+            <button onclick="App.toggleLang()" class="lang-btn p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">EN</button>
+        </div>
+
+        <div class="space-y-6">
+            <section class="card p-5 sm:p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="setup-title">1. Modus & Größe</h2>
+                <div class="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl mb-6">
+                    <button id="tab-auto" class="tab active flex-1" onclick="App.setMode('auto')">Auto-Pool</button>
+                    <button id="tab-manual" class="tab flex-1" onclick="App.setMode('manual')">Direkt</button>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div>
+                        <p class="font-black text-xs uppercase" id="size-title">Team-Größe</p>
+                        <p class="text-[9px] font-bold label-text uppercase mt-0.5" id="size-sub">Personen / Team</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="App.changeSize(-1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">-</button>
+                        <span id="size-display" class="w-6 text-center font-black text-xl">1</span>
+                        <button onclick="App.changeSize(1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">+</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card p-5 sm:p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="roster-title">2. Teilnehmer</h2>
+                <div id="view-auto">
+                    <textarea id="pool-input" class="input-field min-h-[180px]" placeholder="Namen hier eingeben (einer pro Zeile)..."></textarea>
+                </div>
+                <div id="view-manual" class="hidden space-y-4">
+                    <div id="manual-list" class="space-y-3"></div>
+                    <button id="btn-add-manual" onclick="App.addManualEntry()" class="w-full py-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl label-text font-black text-[9px] uppercase tracking-[0.2em] hover:text-blue-500 transition-all">+ Hinzufügen</button>
+                </div>
+            </section>
+
+            <button id="btn-generate" onclick="App.generateTournament()" class="btn-primary shadow-xl">Turnier Erstellen</button>
+        </div>
+    </div>
+
+    <!-- TOURNAMENT VIEW -->
+    <div id="tournament-view" class="hidden min-h-screen flex flex-col">
+        <header class="p-4 sm:p-5 flex justify-between items-center border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg sticky top-0 z-50">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h1 class="text-lg font-black uppercase tracking-tighter">Live<span class="accent-text">Bracket</span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="App.toggleLang()" class="lang-btn p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">EN</button>
+                <button id="btn-reroll" onclick="App.reroll()" class="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">Mischen</button>
+                <button id="btn-setup" onclick="App.backToSetup()" class="p-2 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider">Setup</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden flex flex-col p-4 sm:p-6 space-y-4">
+            <!-- Next Game Display -->
+            <div id="next-game-container" class="hidden">
+                <div class="next-game-banner">
+                    <div class="flex justify-between items-center mb-2">
+                        <span id="next-game-label" class="text-[10px] font-black uppercase tracking-widest opacity-80">Nächstes Spiel</span>
+                        <span id="next-game-round" class="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Runde 1</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex-1 text-center">
+                            <p id="next-team1-name" class="font-black text-sm uppercase truncate">Team A</p>
+                            <p id="next-team1-members" class="text-[9px] opacity-70 truncate">Spieler...</p>
+                        </div>
+                        <div class="font-black text-xl italic opacity-50">VS</div>
+                        <div class="flex-1 text-center">
+                            <p id="next-team2-name" class="font-black text-sm uppercase truncate">Team B</p>
+                            <p id="next-team2-members" class="text-[9px] opacity-70 truncate">Spieler...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Section -->
+            <section class="card p-4 overflow-hidden">
+                <h2 id="teams-title" class="text-[9px] font-black uppercase tracking-[0.2em] label-text mb-3">Teams & Kader</h2>
+                <div id="teams-display" class="flex overflow-x-auto gap-3 pb-2 scrollbar-hide"></div>
+            </section>
+
+            <!-- Bracket Section -->
+            <div id="bracket-scroller" class="flex-1 overflow-auto rounded-3xl bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800">
+                <div id="bracket-root" class="bracket-container"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- EDIT TEAM MODAL -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div class="card p-6 w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="text-sm font-black uppercase tracking-wider mb-4" id="modal-title">Team Bearbeiten</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase label-text mb-1 block" id="modal-label-name">Team Name</label>
+                    <input type="text" id="edit-team-name" class="input-field w-full text-xs font-black uppercase">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase label-text mb-1 block" id="modal-label-members">Mitglieder</label>
+                    <input type="text" id="edit-team-members" class="input-field w-full text-xs">
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="App.closeEditModal()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-xs uppercase" id="modal-btn-cancel">Abbrechen</button>
+                    <button onclick="App.saveTeamEdit()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs uppercase" id="modal-btn-save">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const I18N = {
+            de: {
+                subTitle: "Setup & Roster",
+                setupTitle: "1. Modus & Größe",
+                autoPool: "Auto-Pool",
+                directEntry: "Direkt",
+                teamSize: "Team-Größe",
+                peoplePerTeam: "Personen / Team",
+                rosterTitle: "2. Teilnehmer",
+                poolPlaceholder: "Namen hier eingeben (einer pro Zeile)...",
+                addTeam: "+ Hinzufügen",
+                createBtn: "Turnier Erstellen",
+                rerollBtn: "Mischen",
+                setupBtn: "Setup",
+                nextGame: "Nächstes Spiel",
+                teamsTitle: "Teams & Kader",
+                noMembers: "Keine Mitglieder",
+                bye: "FREILOS",
+                tbd: "TBD",
+                pending: "WARTET",
+                confirmReroll: "Neu mischen und Teams neu generieren?",
+                editTeamTitle: "Team Bearbeiten",
+                teamNamePlaceholder: "Team Name",
+                membersPlaceholder: "Mitglieder (kommagetrennt)",
+                saveBtn: "Speichern",
+                cancelBtn: "Abbrechen",
+                needTwoNames: "Mind. 2 Namen nötig.",
+                needTwoTeams: "Mind. 2 Teams nötig.",
+                grandFinals: "Finale",
+                roundName: "Runde {n}",
+                teamEmptyAlert: "Teamname darf nicht leer sein."
+            },
+            en: {
+                subTitle: "Setup & Roster",
+                setupTitle: "1. Mode & Size",
+                autoPool: "Auto-Pool",
+                directEntry: "Direct",
+                teamSize: "Team Size",
+                peoplePerTeam: "People / Team",
+                rosterTitle: "2. Roster",
+                poolPlaceholder: "Enter names here (one per line)...",
+                addTeam: "+ Add Entry",
+                createBtn: "Create Tournament",
+                rerollBtn: "Reroll",
+                setupBtn: "Setup",
+                nextGame: "Next Game",
+                teamsTitle: "Teams & Roster",
+                noMembers: "No members",
+                bye: "BYE",
+                tbd: "TBD",
+                pending: "PENDING",
+                confirmReroll: "Reroll and regenerate teams?",
+                editTeamTitle: "Edit Team",
+                teamNamePlaceholder: "Team Name",
+                membersPlaceholder: "Members (comma separated)",
+                saveBtn: "Save",
+                cancelBtn: "Cancel",
+                needTwoNames: "At least 2 names required.",
+                needTwoTeams: "At least 2 teams required.",
+                grandFinals: "Grand Finals",
+                roundName: "Round {n}",
+                teamEmptyAlert: "Team name cannot be empty."
+            }
+        };
+
+        const App = {
+            state: {
+                mode: 'auto',
+                size: 1,
+                manualEntries: [
+                    { id: 1, name: 'Team Alpha', members: 'S1, S2' },
+                    { id: 2, name: 'Team Beta', members: 'S3, S4' }
+                ],
+                teams: [],
+                bracket: null,
+                lang: 'de',
+                editingTeamId: null
+            },
+
+            init() {
+                // First load language
+                const savedLang = localStorage.getItem('tbg_lang') || 'de';
+                this.state.lang = savedLang;
+
+                const saved = localStorage.getItem('tbg_state_v2');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    this.state.mode = parsed.mode || 'auto';
+                    this.state.size = parsed.size || 1;
+                    this.state.manualEntries = parsed.manualEntries || this.state.manualEntries;
+                    this.state.lang = parsed.lang || this.state.lang;
+                    
+                    document.getElementById('pool-input').value = parsed.poolInput || '';
+                    
+                    if (parsed.view === 'tournament' && parsed.bracket && parsed.teams) {
+                        this.state.teams = parsed.teams;
+                        this.state.bracket = parsed.bracket;
+                        
+                        // Re-establish object references
+                        this.state.bracket.rounds.forEach(round => {
+                            round.matches.forEach(match => {
+                                if (match.team1) match.team1 = this.state.teams.find(t => t.id === match.team1.id) || match.team1;
+                                if (match.team2) match.team2 = this.state.teams.find(t => t.id === match.team2.id) || match.team2;
+                                if (match.winner) match.winner = this.state.teams.find(t => t.id === match.winner.id) || match.winner;
+                            });
+                        });
+                        
+                        document.getElementById('setup-view').classList.add('hidden');
+                        document.getElementById('tournament-view').classList.remove('hidden');
+                    }
+                }
+                
+                this.setLanguage(this.state.lang);
+            },
+
+            setLanguage(lang) {
+                this.state.lang = lang;
+                localStorage.setItem('tbg_lang', lang);
+                
+                const t = I18N[lang];
+                
+                // Header & Setup view labels
+                document.getElementById('brand-sub').innerText = t.subTitle;
+                document.getElementById('setup-title').innerText = t.setupTitle;
+                document.getElementById('tab-auto').innerText = t.autoPool;
+                document.getElementById('tab-manual').innerText = t.directEntry;
+                document.getElementById('size-title').innerText = t.teamSize;
+                document.getElementById('size-sub').innerText = t.peoplePerTeam;
+                document.getElementById('roster-title').innerText = t.rosterTitle;
+                document.getElementById('pool-input').placeholder = t.poolPlaceholder;
+                document.getElementById('btn-add-manual').innerText = t.addTeam;
+                document.getElementById('btn-generate').innerText = t.createBtn;
+                
+                // Tournament dashboard labels
+                document.getElementById('btn-reroll').innerText = t.rerollBtn;
+                document.getElementById('btn-setup').innerText = t.setupBtn;
+                document.getElementById('teams-title').innerText = t.teamsTitle;
+                document.getElementById('next-game-label').innerText = t.nextGame;
+                
+                // Edit team modal labels
+                document.getElementById('modal-title').innerText = t.editTeamTitle;
+                document.getElementById('modal-label-name').innerText = t.teamNamePlaceholder;
+                document.getElementById('modal-label-members').innerText = t.membersPlaceholder;
+                document.getElementById('edit-team-name').placeholder = t.teamNamePlaceholder;
+                document.getElementById('edit-team-members').placeholder = t.membersPlaceholder;
+                document.getElementById('modal-btn-cancel').innerText = t.cancelBtn;
+                document.getElementById('modal-btn-save').innerText = t.saveBtn;
+                
+                // Update DE/EN toggle button texts
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.innerText = lang === 'de' ? 'EN' : 'DE';
+                });
+
+                if (this.state.bracket) {
+                    this.renderTournament();
+                } else {
+                    this.renderSetup();
+                }
+            },
+
+            toggleLang() {
+                this.setLanguage(this.state.lang === 'de' ? 'en' : 'de');
+                this.save();
+            },
+
+            save() {
+                const data = {
+                    mode: this.state.mode,
+                    size: this.state.size,
+                    manualEntries: this.state.manualEntries,
+                    poolInput: document.getElementById('pool-input').value,
+                    teams: this.state.teams,
+                    bracket: this.state.bracket,
+                    view: this.state.bracket ? 'tournament' : 'setup',
+                    lang: this.state.lang
+                };
+                localStorage.setItem('tbg_state_v2', JSON.stringify(data));
+            },
+
+            setMode(m) {
+                this.state.mode = m;
+                document.getElementById('tab-auto').classList.toggle('active', m === 'auto');
+                document.getElementById('tab-manual').classList.toggle('active', m === 'manual');
+                document.getElementById('view-auto').classList.toggle('hidden', m !== 'auto');
+                document.getElementById('view-manual').classList.toggle('hidden', m !== 'manual');
+                this.save();
+            },
+
+            changeSize(d) {
+                this.state.size = Math.max(1, this.state.size + d);
+                document.getElementById('size-display').innerText = this.state.size;
+                this.save();
+            },
+
+            addManualEntry() {
+                this.state.manualEntries.push({ id: Date.now(), name: `Team ${(this.state.manualEntries.length + 1)}`, members: '' });
+                this.renderSetup();
+                this.save();
+            },
+
+            updateManual(id, field, value) {
+                const entry = this.state.manualEntries.find(e => e.id === id);
+                if (entry) entry[field] = value;
+                this.save();
+            },
+
+            removeManual(id) {
+                this.state.manualEntries = this.state.manualEntries.filter(e => e.id !== id);
+                this.renderSetup();
+                this.save();
+            },
+
+            renderSetup() {
+                document.getElementById('size-display').innerText = this.state.size;
+                const list = document.getElementById('manual-list');
+                list.innerHTML = '';
+                this.state.manualEntries.forEach(entry => {
+                    const div = document.createElement('div');
+                    div.className = 'manual-entry-row flex gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800';
+                    div.innerHTML = `
+                        <input type="text" value="${entry.name}" placeholder="${I18N[this.state.lang].teamNamePlaceholder}" class="input-field flex-1 p-2 text-xs font-black uppercase" oninput="App.updateManual(${entry.id}, 'name', this.value)">
+                        <input type="text" value="${entry.members}" placeholder="${I18N[this.state.lang].membersPlaceholder}" class="input-field flex-[2] p-2 text-xs" oninput="App.updateManual(${entry.id}, 'members', this.value)">
+                        <button onclick="App.removeManual(${entry.id})" class="text-red-500 px-2 font-black text-lg">×</button>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            shuffle(array) {
+                let curr = array.length, rand;
+                while (curr != 0) {
+                    rand = Math.floor(Math.random() * curr);
+                    curr--;
+                    [array[curr], array[rand]] = [array[rand], array[curr]];
+                }
+                return array;
+            },
+
+            generateTournament() {
+                this.save();
+                let teams = [];
+                const t = I18N[this.state.lang];
+                if (this.state.mode === 'auto') {
+                    const raw = document.getElementById('pool-input').value.split('\n').map(n => n.trim()).filter(n => n);
+                    if (raw.length < 2) return alert(t.needTwoNames);
+                    const shuffled = this.shuffle([...raw]);
+                    for (let i = 0; i < shuffled.length; i += this.state.size) {
+                        teams.push({ id: `t-${i}`, name: `Team ${teams.length + 1}`, members: shuffled.slice(i, i + this.state.size) });
+                    }
+                } else {
+                    teams = this.state.manualEntries.filter(e => e.name.trim()).map((e, index) => ({ id: `tm-${index}`, name: e.name, members: e.members.split(',').map(m => m.trim()).filter(m => m) }));
+                    if (teams.length < 2) return alert(t.needTwoTeams);
+                }
+                this.state.teams = teams;
+                this.state.bracket = this.buildBracket(this.shuffle([...teams]));
+                document.getElementById('setup-view').classList.add('hidden');
+                document.getElementById('tournament-view').classList.remove('hidden');
+                this.save();
+                this.renderTournament();
+            },
+
+            reroll() { 
+                if (confirm(I18N[this.state.lang].confirmReroll)) {
+                    this.generateTournament(); 
+                }
+            },
+
+            backToSetup() {
+                this.state.bracket = null;
+                this.state.teams = [];
+                document.getElementById('tournament-view').classList.add('hidden');
+                document.getElementById('setup-view').classList.remove('hidden');
+                this.save();
+                this.renderSetup();
+            },
+
+            buildBracket(teams) {
+                const count = teams.length;
+                if (count < 2) return null;
+
+                const rCount = Math.ceil(Math.log2(count));
+                const bSize = Math.pow(2, rCount);
+                
+                const byeCount = bSize - count;
+                const activeTeamsCount = 2 * count - bSize;
+
+                const r1 = [];
+                let teamIndex = 0;
+                
+                for (let i = 0; i < bSize / 2; i++) {
+                    let team1 = null;
+                    let team2 = null;
+                    let winner = null;
+
+                    if (teamIndex < activeTeamsCount) {
+                        team1 = teams[teamIndex++];
+                        team2 = teams[teamIndex++];
+                    } else if (teamIndex < count) {
+                        team1 = teams[teamIndex++];
+                        team2 = null; // BYE
+                        winner = team1; // Advances automatically
+                    }
+
+                    r1.push({ id: `r0-m${i}`, team1, team2, winner });
+                }
+
+                const rounds = [{ matches: r1 }];
+
+                for (let r = 1; r < rCount; r++) {
+                    const matches = [];
+                    for (let m = 0; m < bSize / Math.pow(2, r + 1); m++) {
+                        const match = { id: `r${r}-m${m}`, team1: null, team2: null, winner: null };
+                        
+                        const p1 = rounds[r-1].matches[m*2];
+                        const p2 = rounds[r-1].matches[m*2 + 1];
+                        
+                        if (p1.winner) match.team1 = p1.winner;
+                        if (p2.winner) match.team2 = p2.winner;
+
+                        matches.push(match);
+                    }
+                    rounds.push({ matches });
+                }
+                return { rounds };
+            },
+
+            openEditModal(teamId) {
+                const team = this.state.teams.find(t => t.id === teamId);
+                if (!team) return;
+                this.state.editingTeamId = teamId;
+                
+                document.getElementById('edit-team-name').value = team.name;
+                document.getElementById('edit-team-members').value = team.members.join(', ');
+                
+                document.getElementById('edit-modal').classList.remove('hidden');
+            },
+
+            closeEditModal() {
+                this.state.editingTeamId = null;
+                document.getElementById('edit-modal').classList.add('hidden');
+            },
+
+            saveTeamEdit() {
+                const teamId = this.state.editingTeamId;
+                if (!teamId) return;
+                const team = this.state.teams.find(t => t.id === teamId);
+                if (team) {
+                    const newName = document.getElementById('edit-team-name').value.trim();
+                    const newMembers = document.getElementById('edit-team-members').value.split(',').map(m => m.trim()).filter(m => m);
+                    
+                    if (!newName) return alert(I18N[this.state.lang].teamEmptyAlert);
+                    
+                    team.name = newName;
+                    team.members = newMembers;
+                    
+                    this.save();
+                    this.renderTournament();
+                }
+                this.closeEditModal();
+            },
+
+            renderTournament() {
+                const t = I18N[this.state.lang];
+                const teamsDiv = document.getElementById('teams-display');
+                teamsDiv.innerHTML = '';
+                this.state.teams.forEach(teamObj => {
+                    const b = document.createElement('div');
+                    b.className = 'bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-2 rounded-xl flex flex-col min-w-[140px] shadow-sm flex-shrink-0 cursor-pointer hover:border-blue-500 transition-colors';
+                    b.onclick = () => this.openEditModal(teamObj.id);
+                    
+                    const members = teamObj.members.join(', ') || t.noMembers;
+                    b.innerHTML = `
+                        <span class="text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 truncate">${members}</span>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[8px] font-bold text-blue-500 uppercase tracking-tighter">${teamObj.name}</span>
+                            <span class="text-[8px] opacity-40">✏️</span>
+                        </div>
+                    `;
+                    teamsDiv.appendChild(b);
+                });
+
+                const nextMatchInfo = this.findNextMatch();
+                this.renderNextGame(nextMatchInfo);
+
+                const root = document.getElementById('bracket-root');
+                root.innerHTML = '';
+                this.state.bracket.rounds.forEach((round, rIdx) => {
+                    const col = document.createElement('div');
+                    col.className = 'round-col';
+                    
+                    let roundName = '';
+                    const totalRounds = this.state.bracket.rounds.length;
+                    if (rIdx === totalRounds - 1) {
+                        roundName = t.grandFinals;
+                    } else {
+                        roundName = t.roundName.replace('{n}', rIdx + 1);
+                    }
+                    col.innerHTML = `<div class="text-center font-black text-slate-400 uppercase text-[8px] tracking-widest mb-4">${roundName}</div>`;
+                    
+                    round.matches.forEach((match, mIdx) => {
+                        const box = document.createElement('div');
+                        const isNext = nextMatchInfo && nextMatchInfo.match.id === match.id;
+                        box.className = `match ${isNext ? 'highlight-next' : ''}`;
+                        
+                        [match.team1, match.team2].forEach((team, tIdx) => {
+                            const isSecondSlot = tIdx === 1;
+                            const isByeSlot = !team && (rIdx === 0 && ((isSecondSlot && match.team1 && !match.team2) || (!isSecondSlot && !match.team1 && match.team2)));
+                            const win = match.winner && team && match.winner.id === team.id;
+                            const slot = document.createElement('div');
+                            slot.className = `slot ${win ? 'winner' : ''}`;
+                            
+                            const nameLabel = team ? team.name : (isByeSlot ? t.bye : t.tbd);
+                            const membersLabel = team ? team.members.join(', ') : '';
+
+                            slot.innerHTML = `
+                                <div class="flex justify-between items-center relative pr-4">
+                                    <div class="flex flex-col truncate">
+                                        <span class="text-[10px] font-black uppercase truncate ${team ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 italic'}">${membersLabel || nameLabel}</span>
+                                        ${team ? `<span class="text-[8px] font-bold text-blue-500 uppercase tracking-tighter">${nameLabel}</span>` : ''}
+                                    </div>
+                                    ${team ? `<button onclick="event.stopPropagation(); App.openEditModal('${team.id}')" class="text-slate-400 hover:text-blue-500 text-[8px] absolute right-0">✏️</button>` : ''}
+                                </div>
+                            `;
+                            
+                            if (team && !match.winner) {
+                                slot.onclick = () => this.setWinner(rIdx, mIdx, team);
+                            } else if (win) {
+                                slot.onclick = () => this.setWinner(rIdx, mIdx, null);
+                            }
+                            box.appendChild(slot);
+                        });
+                        col.appendChild(box);
+                    });
+                    root.appendChild(col);
+                });
+            },
+
+            findNextMatch() {
+                for (let r = 0; r < this.state.bracket.rounds.length; r++) {
+                    const round = this.state.bracket.rounds[r];
+                    for (const match of round.matches) {
+                        if (!match.winner && match.team1 && match.team2) {
+                            return { roundName: I18N[this.state.lang].roundName.replace('{n}', r + 1), match };
+                        }
+                    }
+                }
+                return null;
+            },
+
+            renderNextGame(info) {
+                const container = document.getElementById('next-game-container');
+                if (!info) {
+                    container.classList.add('hidden');
+                    return;
+                }
+                container.classList.remove('hidden');
+                
+                const t = I18N[this.state.lang];
+                document.getElementById('next-game-round').innerText = info.roundName;
+                
+                document.getElementById('next-team1-name').innerText = info.match.team1.members.join(', ') || t.noMembers;
+                document.getElementById('next-team1-members').innerText = info.match.team1.name;
+                
+                document.getElementById('next-team2-name').innerText = info.match.team2.members.join(', ') || t.noMembers;
+                document.getElementById('next-team2-members').innerText = info.match.team2.name;
+            },
+
+            setWinner(rIdx, mIdx, team) {
+                const match = this.state.bracket.rounds[rIdx].matches[mIdx];
+                match.winner = team;
+                if (rIdx + 1 < this.state.bracket.rounds.length) {
+                    const nextMatch = this.state.bracket.rounds[rIdx + 1].matches[Math.floor(mIdx / 2)];
+                    if (mIdx % 2 === 0) {
+                        if (team === null) this.clearDownstream(rIdx + 1, Math.floor(mIdx / 2), true);
+                        else nextMatch.team1 = team;
+                    } else {
+                        if (team === null) this.clearDownstream(rIdx + 1, Math.floor(mIdx / 2), false);
+                        else nextMatch.team2 = team;
+                    }
+                }
+                this.save();
+                this.renderTournament();
+            },
+
+            clearDownstream(rIdx, mIdx, isT1) {
+                const m = this.state.bracket.rounds[rIdx].matches[mIdx];
+                if (isT1) m.team1 = null; else m.team2 = null;
+                m.winner = null;
+                if (rIdx + 1 < this.state.bracket.rounds.length) {
+                    this.clearDownstream(rIdx + 1, Math.floor(mIdx / 2), mIdx % 2 === 0);
+                }
+            },
+
+            toggleTheme() {
+                document.body.classList.toggle('dark');
+                const isDark = document.body.classList.contains('dark');
+                document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
+                document.getElementById('moon-icon').classList.toggle('hidden', isDark);
+            }
+        };
+
+        window.App = App;
+        window.onload = () => App.init();
+        window.toggleTheme = () => App.toggleTheme();
+    </script>
+</body>
+</html>

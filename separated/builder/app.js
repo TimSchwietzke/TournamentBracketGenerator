@@ -1,373 +1,161 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tournament Pro - Builder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --accent: #3b82f6;
-            --input-bg: #f1f5f9;
-        }
-        .dark {
-            --bg: #020617;
-            --card: #0f172a;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #1e293b;
-            --accent: #60a5fa;
-            --input-bg: #1e293b;
-        }
+const I18N = {
+    de: {
+        subTitle: "Setup & Compiler",
+        setupTitle: "1. Modus & Größe",
+        autoPool: "Auto-Pool",
+        directEntry: "Direkt",
+        teamSize: "Team-Größe",
+        peoplePerTeam: "Personen / Team",
+        rosterTitle: "2. Teilnehmer",
+        poolPlaceholder: "Namen hier eingeben (einer pro Zeile)...",
+        addTeam: "+ Hinzufügen",
+        step3Title: "Compiler Engine",
+        downloadBtn: "Engine Herunterladen",
+        needTwoNames: "Mind. 2 Namen nötig.",
+        needTwoTeams: "Mind. 2 Teams nötig.",
+        teamPlaceholder: "Team Name",
+        membersPlaceholder: "Mitglieder (kommagetrennt)"
+    },
+    en: {
+        subTitle: "Setup & Compiler",
+        setupTitle: "1. Mode & Size",
+        autoPool: "Auto-Pool",
+        directEntry: "Direct",
+        teamSize: "Team Size",
+        peoplePerTeam: "People / Team",
+        rosterTitle: "2. Roster",
+        poolPlaceholder: "Enter names here (one per line)...",
+        addTeam: "+ Add Entry",
+        step3Title: "Compiler Engine",
+        downloadBtn: "Download Engine",
+        needTwoNames: "At least 2 names required.",
+        needTwoTeams: "At least 2 teams required.",
+        teamPlaceholder: "Team Name",
+        membersPlaceholder: "Members (comma separated)"
+    }
+};
 
-        body { 
-            background-color: var(--bg); 
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
-            transition: background 0.3s ease, color 0.3s ease;
-            min-height: 100vh;
-            margin: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
+const App = {
+    state: { 
+        mode: 'auto', 
+        size: 1, 
+        manual: [
+            { id: 1, name: 'TEAM-01', members: '' }, 
+            { id: 2, name: 'TEAM-02', members: '' }
+        ],
+        lang: 'de'
+    },
+    
+    init() { 
+        const savedLang = localStorage.getItem('tbg_lang') || 'de';
+        this.state.lang = savedLang;
+        this.setLanguage(this.state.lang);
+    },
 
-        h1, h2, h3, h4, p, span, div, textarea, input { color: var(--text); }
-        .label-text { color: var(--text-muted) !important; }
-        .accent-text { color: var(--accent) !important; }
+    setLanguage(lang) {
+        this.state.lang = lang;
+        localStorage.setItem('tbg_lang', lang);
+        
+        const t = I18N[lang];
+        document.getElementById('brand-sub').innerText = t.subTitle;
+        document.getElementById('setup-title').innerText = t.setupTitle;
+        document.getElementById('tab-auto').innerText = t.autoPool;
+        document.getElementById('tab-manual').innerText = t.directEntry;
+        document.getElementById('size-title').innerText = t.teamSize;
+        document.getElementById('size-sub').innerText = t.peoplePerTeam;
+        document.getElementById('roster-title').innerText = t.rosterTitle;
+        document.getElementById('pool-input').placeholder = t.poolPlaceholder;
+        document.getElementById('btn-add-manual').innerText = t.addTeam;
+        document.getElementById('step3-title').innerText = t.step3Title;
+        document.getElementById('btn-download').innerText = t.downloadBtn;
+        
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.innerText = lang === 'de' ? 'EN' : 'DE';
+        });
 
-        .card {
-            background-color: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
+        this.render();
+    },
 
-        .input-field {
-            background-color: var(--input-bg);
-            border: 2px solid transparent;
-            border-radius: 0.75rem;
-            color: var(--text) !important;
-            padding: 0.75rem;
-            outline: none;
-            width: 100%;
-            font-size: 16px; /* Prevents iOS zoom */
-        }
-        .input-field:focus { background-color: var(--card); border-color: var(--accent); }
+    toggleLang() {
+        this.setLanguage(this.state.lang === 'de' ? 'en' : 'de');
+    },
 
-        .tab {
-            cursor: pointer;
-            padding: 0.6rem 1rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted) !important;
-            transition: all 0.2s ease;
-            border: none;
-            background: transparent;
-            font-size: 0.875rem;
-        }
-        .tab.active {
-            background-color: var(--card);
-            color: var(--accent) !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
+    setMode(m) {
+        this.state.mode = m;
+        document.getElementById('tab-auto').classList.toggle('active', m === 'auto');
+        document.getElementById('tab-manual').classList.toggle('active', m === 'manual');
+        document.getElementById('view-auto').classList.toggle('hidden', m !== 'auto');
+        document.getElementById('view-manual').classList.toggle('hidden', m !== 'manual');
+        if (m === 'manual') this.render();
+    },
 
-        .theme-toggle {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 100;
-            background-color: var(--card);
-            border: 1px solid var(--border);
-            padding: 0.75rem;
-            border-radius: 99px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            cursor: pointer;
-        }
+    changeSize(d) {
+        this.state.size = Math.max(1, this.state.size + d);
+        document.getElementById('size-display').innerText = this.state.size;
+    },
 
-        .finalize-card {
-            background-color: #0f172a;
-            border-radius: 1.5rem;
-            color: white !important;
-            padding: 2.5rem;
-            text-align: center;
-        }
-        .dark .finalize-card { background-color: #2563eb; }
+    add() {
+        this.state.manual.push({ id: Date.now(), name: `TEAM-${(this.state.manual.length+1).toString().padStart(2,'0')}`, members: '' });
+        this.render();
+    },
 
-        .btn-engine {
-            background-color: white;
-            color: #0f172a !important;
-            width: 100%;
-            padding: 1rem;
-            border-radius: 1rem;
-            font-weight: 900;
-            font-size: 1.1rem;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .btn-engine:hover { transform: scale(1.01); }
+    update(id, f, v) {
+        const t = this.state.manual.find(x => x.id === id);
+        if (t) t[f] = v;
+    },
 
-        /* Mobile specific adjustments */
-        @media (max-width: 640px) {
-            .manual-entry-row {
-                flex-direction: column;
-                gap: 0.5rem;
+    remove(id) {
+        this.state.manual = this.state.manual.filter(x => x.id !== id);
+        this.render();
+    },
+
+    render() {
+        const c = document.getElementById('manual-list');
+        if (!c) return;
+        c.innerHTML = '';
+        this.state.manual.forEach(t => {
+            const d = document.createElement('div');
+            d.className = 'flex gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800';
+            d.innerHTML = `
+                <input type="text" value="${t.name}" placeholder="${I18N[this.state.lang].teamPlaceholder}" class="input-field flex-1 p-2 text-xs font-black uppercase" oninput="App.update(${t.id}, 'name', this.value)">
+                <input type="text" value="${t.members}" placeholder="${I18N[this.state.lang].membersPlaceholder}" class="input-field flex-[2] p-2 text-xs" oninput="App.update(${t.id}, 'members', this.value)">
+                <button onclick="App.remove(${t.id})" class="text-red-500 px-2 font-black text-lg">×</button>
+            `;
+            c.appendChild(d);
+        });
+    },
+
+    shuffle(a) {
+        for (let p=0; p<3; p++) {
+            for (let i=a.length-1; i>0; i--) {
+                const j = Math.floor(Math.random()*(i+1));
+                [a[i], a[j]] = [a[j], a[i]];
             }
-            .manual-entry-row button {
-                align-self: flex-end;
-                padding: 0.5rem;
-            }
-            .theme-toggle { bottom: 1rem; right: 1rem; }
         }
+        return a;
+    },
 
-        .bg-glow {
-            position: fixed;
-            width: 100vw;
-            height: 100vw;
-            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-            opacity: 0.03;
-            filter: blur(60px);
-            z-index: -1;
-            pointer-events: none;
-        }
-    </style>
-</head>
-<body class="dark px-4 py-8">
-
-    <div class="bg-glow" style="top: -20%; left: -20%;"></div>
-
-    <!-- THEME TOGGLE -->
-    <button class="theme-toggle" onclick="window.toggleTheme()">
-        <svg id="sun-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20" style="color: #fbbf24;"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
-        <svg id="moon-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style="color: #818cf8;"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
-    </button>
-
-    <div class="max-w-xl mx-auto">
-        <!-- Brand -->
-        <div class="flex justify-between items-center mb-8">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black uppercase tracking-tighter">Bracket<span class="accent-text">Builder</span></h1>
-                    <p class="text-[9px] font-bold label-text uppercase tracking-[0.2em]" id="brand-sub">Setup & Compiler</p>
-                </div>
-            </div>
-            <!-- Language Select -->
-            <button onclick="App.toggleLang()" class="lang-btn p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">EN</button>
-        </div>
-
-        <div id="app" class="space-y-6">
-            <!-- Step 1 -->
-            <section class="card p-5 sm:p-6">
-                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="setup-title">1. Modus & Größe</h2>
-                <div class="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6">
-                    <button id="tab-auto" class="tab active flex-1" onclick="window.setMode('auto')">Auto-Pool</button>
-                    <button id="tab-manual" class="tab flex-1" onclick="window.setMode('manual')">Direkt</button>
-                </div>
-                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
-                    <div>
-                        <p class="font-black text-xs uppercase" id="size-title">Team-Größe</p>
-                        <p class="text-[9px] font-bold label-text uppercase mt-0.5" id="size-sub">Personen / Team</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button onclick="window.changeSize(-1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">-</button>
-                        <span id="size-display" class="w-6 text-center font-black text-xl">1</span>
-                        <button onclick="window.changeSize(1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">+</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Step 2 -->
-            <section class="card p-5 sm:p-6">
-                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="roster-title">2. Teilnehmer</h2>
-                <div id="view-auto">
-                    <textarea id="pool-input" class="input-field min-h-[180px]" placeholder="Namen hier eingeben (einer pro Zeile)..."></textarea>
-                </div>
-                <div id="view-manual" class="hidden space-y-4">
-                    <div id="manual-list" class="space-y-3"></div>
-                    <button id="btn-add-manual" onclick="window.addTeam()" class="w-full py-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl label-text font-black text-[9px] uppercase tracking-[0.2em] hover:text-blue-500 transition-all">+ Hinzufügen</button>
-                </div>
-            </section>
-
-            <!-- Step 3 -->
-            <section class="finalize-card">
-                <h2 class="text-[9px] font-black uppercase tracking-[0.4em] mb-4 text-blue-300 dark:text-blue-200" id="step3-title">Compiler Engine</h2>
-                <button onclick="window.processAndDownload()" class="btn-engine shadow-lg" id="btn-download">Download Engine</button>
-            </section>
-        </div>
-    </div>
-
-    <script>
-        const I18N = {
-            de: {
-                subTitle: "Setup & Compiler",
-                setupTitle: "1. Modus & Größe",
-                autoPool: "Auto-Pool",
-                directEntry: "Direkt",
-                teamSize: "Team-Größe",
-                peoplePerTeam: "Personen / Team",
-                rosterTitle: "2. Teilnehmer",
-                poolPlaceholder: "Namen hier eingeben (einer pro Zeile)...",
-                addTeam: "+ Hinzufügen",
-                step3Title: "Compiler Engine",
-                downloadBtn: "Engine Herunterladen",
-                needTwoNames: "Mind. 2 Namen nötig.",
-                needTwoTeams: "Mind. 2 Teams nötig.",
-                teamPlaceholder: "Team Name",
-                membersPlaceholder: "Mitglieder (kommagetrennt)"
-            },
-            en: {
-                subTitle: "Setup & Compiler",
-                setupTitle: "1. Mode & Size",
-                autoPool: "Auto-Pool",
-                directEntry: "Direct",
-                teamSize: "Team Size",
-                peoplePerTeam: "People / Team",
-                rosterTitle: "2. Roster",
-                poolPlaceholder: "Enter names here (one per line)...",
-                addTeam: "+ Add Entry",
-                step3Title: "Compiler Engine",
-                downloadBtn: "Download Engine",
-                needTwoNames: "At least 2 names required.",
-                needTwoTeams: "At least 2 teams required.",
-                teamPlaceholder: "Team Name",
-                membersPlaceholder: "Members (comma separated)"
+    download() {
+        let teams = [];
+        const t = I18N[this.state.lang];
+        if (this.state.mode === 'auto') {
+            const raw = document.getElementById('pool-input').value.split('\n').map(n => n.trim()).filter(n => n);
+            if (raw.length < 2) return alert(t.needTwoNames);
+            const s = this.shuffle([...raw]);
+            for (let i=0; i<s.length; i+=this.state.size) {
+                teams.push({ id: `t-${i}`, name: `TEAM-${(teams.length+1).toString().padStart(2,'0')}`, members: s.slice(i, i+this.state.size) });
             }
-        };
-
-        const App = {
-            state: { 
-                mode: 'auto', 
-                size: 1, 
-                manual: [
-                    { id: 1, name: 'TEAM-01', members: '' }, 
-                    { id: 2, name: 'TEAM-02', members: '' }
-                ],
-                lang: 'de'
-            },
-            
-            init() { 
-                const savedLang = localStorage.getItem('tbg_lang') || 'de';
-                this.state.lang = savedLang;
-                this.setLanguage(this.state.lang);
-            },
-
-            setLanguage(lang) {
-                this.state.lang = lang;
-                localStorage.setItem('tbg_lang', lang);
-                
-                const t = I18N[lang];
-                document.getElementById('brand-sub').innerText = t.subTitle;
-                document.getElementById('setup-title').innerText = t.setupTitle;
-                document.getElementById('tab-auto').innerText = t.autoPool;
-                document.getElementById('tab-manual').innerText = t.directEntry;
-                document.getElementById('size-title').innerText = t.teamSize;
-                document.getElementById('size-sub').innerText = t.peoplePerTeam;
-                document.getElementById('roster-title').innerText = t.rosterTitle;
-                document.getElementById('pool-input').placeholder = t.poolPlaceholder;
-                document.getElementById('btn-add-manual').innerText = t.addTeam;
-                document.getElementById('step3-title').innerText = t.step3Title;
-                document.getElementById('btn-download').innerText = t.downloadBtn;
-                
-                document.querySelectorAll('.lang-btn').forEach(btn => {
-                    btn.innerText = lang === 'de' ? 'EN' : 'DE';
-                });
-
-                this.render();
-            },
-
-            toggleLang() {
-                this.setLanguage(this.state.lang === 'de' ? 'en' : 'de');
-            },
-
-            setMode(m) {
-                this.state.mode = m;
-                document.getElementById('tab-auto').classList.toggle('active', m === 'auto');
-                document.getElementById('tab-manual').classList.toggle('active', m === 'manual');
-                document.getElementById('view-auto').classList.toggle('hidden', m !== 'auto');
-                document.getElementById('view-manual').classList.toggle('hidden', m !== 'manual');
-                if (m === 'manual') this.render();
-            },
-
-            changeSize(d) {
-                this.state.size = Math.max(1, this.state.size + d);
-                document.getElementById('size-display').innerText = this.state.size;
-            },
-
-            add() {
-                this.state.manual.push({ id: Date.now(), name: `TEAM-${(this.state.manual.length+1).toString().padStart(2,'0')}`, members: '' });
-                this.render();
-            },
-
-            update(id, f, v) {
-                const t = this.state.manual.find(x => x.id === id);
-                if (t) t[f] = v;
-            },
-
-            remove(id) {
-                this.state.manual = this.state.manual.filter(x => x.id !== id);
-                this.render();
-            },
-
-            render() {
-                const c = document.getElementById('manual-list');
-                if (!c) return;
-                c.innerHTML = '';
-                this.state.manual.forEach(t => {
-                    const d = document.createElement('div');
-                    d.className = 'flex gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800';
-                    d.innerHTML = `
-                        <input type="text" value="${t.name}" placeholder="${I18N[this.state.lang].teamPlaceholder}" class="input-field flex-1 p-2 text-xs font-black uppercase" oninput="App.update(${t.id}, 'name', this.value)">
-                        <input type="text" value="${t.members}" placeholder="${I18N[this.state.lang].membersPlaceholder}" class="input-field flex-[2] p-2 text-xs" oninput="App.update(${t.id}, 'members', this.value)">
-                        <button onclick="App.remove(${t.id})" class="text-red-500 px-2 font-black text-lg">×</button>
-                    `;
-                    c.appendChild(d);
-                });
-            },
-
-            shuffle(a) {
-                for (let p=0; p<3; p++) {
-                    for (let i=a.length-1; i>0; i--) {
-                        const j = Math.floor(Math.random()*(i+1));
-                        [a[i], a[j]] = [a[j], a[i]];
-                    }
-                }
-                return a;
-            },
-
-            download() {
-                let teams = [];
-                const t = I18N[this.state.lang];
-                if (this.state.mode === 'auto') {
-                    const raw = document.getElementById('pool-input').value.split('\n').map(n => n.trim()).filter(n => n);
-                    if (raw.length < 2) return alert(t.needTwoNames);
-                    const s = this.shuffle([...raw]);
-                    for (let i=0; i<s.length; i+=this.state.size) {
-                        teams.push({ id: `t-${i}`, name: `TEAM-${(teams.length+1).toString().padStart(2,'0')}`, members: s.slice(i, i+this.state.size) });
-                    }
-                } else {
-                    teams = this.state.manual.filter(x => x.name.trim() && x.members.trim()).map((x, i) => ({ id: `tm-${i}`, name: x.name, members: x.members.split(',').map(m => m.trim()).filter(m => m) }));
-                    if (teams.length < 2) return alert(t.needTwoTeams);
-                }
-                
-                // Shuffle teams for bracket
-                const shuffledTeams = this.shuffle([...teams]);
-                const bracket = this.build(shuffledTeams);
-                const jsonTeams = JSON.stringify(shuffledTeams);
-                const jsonBracket = JSON.stringify(bracket);
-                
-                // Build a premium, self-contained interactive tournament page with language toggle and roster edits
-                let html = `<!DOCTYPE html>
+        } else {
+            teams = this.state.manual.filter(x => x.name.trim() && x.members.trim()).map((x, i) => ({ id: `tm-${i}`, name: x.name, members: x.members.split(',').map(m => m.trim()).filter(m => m) }));
+            if (teams.length < 2) return alert(t.needTwoTeams);
+        }
+        
+        const shuffledTeams = this.shuffle([...teams]);
+        const bracket = this.build(shuffledTeams);
+        const jsonTeams = JSON.stringify(shuffledTeams);
+        const jsonBracket = JSON.stringify(bracket);
+        
+        let html = `<!DOCTYPE html>
 <html lang="${this.state.lang}">
 <head>
     <meta charset="UTF-8">
@@ -637,7 +425,6 @@
             },
 
             init() {
-                // Re-establish object references after inline insertion
                 this.state.bracket.rounds.forEach(round => {
                     round.matches.forEach(match => {
                         if (match.team1) match.team1 = this.state.teams.find(t => t.id === match.team1.id) || match.team1;
@@ -656,7 +443,6 @@
                 document.getElementById('teams-title').innerText = t.teamsTitle;
                 document.getElementById('next-game-label').innerText = t.nextGame;
                 
-                // Modal
                 document.getElementById('modal-title').innerText = t.editTeamTitle;
                 document.getElementById('modal-label-name').innerText = t.teamNamePlaceholder;
                 document.getElementById('modal-label-members').innerText = t.membersPlaceholder;
@@ -850,79 +636,77 @@
 
         window.App = App;
         window.onload = () => App.init();
+        window.toggleTheme = () => App.toggleTheme();
     <\/script>
 </body>
 </html>`;
-                
-                const blob = new Blob([html], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'tournament_pro.html'; a.click();
-            },
+        
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'tournament_pro.html'; a.click();
+    },
 
-            build(teams) {
-                const count = teams.length;
-                if (count < 2) return null;
+    build(teams) {
+        const count = teams.length;
+        if (count < 2) return null;
 
-                const rCount = Math.ceil(Math.log2(count));
-                const bSize = Math.pow(2, rCount);
-                
-                const byeCount = bSize - count;
-                const activeTeamsCount = 2 * count - bSize;
+        const rCount = Math.ceil(Math.log2(count));
+        const bSize = Math.pow(2, rCount);
+        
+        const byeCount = bSize - count;
+        const activeTeamsCount = 2 * count - bSize;
 
-                const r1 = [];
-                let teamIndex = 0;
-                
-                for (let i = 0; i < bSize / 2; i++) {
-                    let team1 = null;
-                    let team2 = null;
-                    let winner = null;
+        const r1 = [];
+        let teamIndex = 0;
+        
+        for (let i = 0; i < bSize / 2; i++) {
+            let team1 = null;
+            let team2 = null;
+            let winner = null;
 
-                    if (teamIndex < activeTeamsCount) {
-                        team1 = teams[teamIndex++];
-                        team2 = teams[teamIndex++];
-                    } else if (teamIndex < count) {
-                        team1 = teams[teamIndex++];
-                        team2 = null; // BYE
-                        winner = team1; // Advances automatically
-                    }
-
-                    r1.push({ id: `r0-m${i}`, team1, team2, winner });
-                }
-
-                const rounds = [{ matches: r1 }];
-
-                for (let r = 1; r < rCount; r++) {
-                    const matches = [];
-                    for (let m = 0; m < bSize / Math.pow(2, r + 1); m++) {
-                        const match = { id: `r${r}-m${m}`, team1: null, team2: null, winner: null };
-                        
-                        const p1 = rounds[r-1].matches[m*2];
-                        const p2 = rounds[r-1].matches[m*2 + 1];
-                        
-                        if (p1.winner) match.team1 = p1.winner;
-                        if (p2.winner) match.team2 = p2.winner;
-
-                        matches.push(match);
-                    }
-                    rounds.push({ matches });
-                }
-                return { rounds };
+            if (teamIndex < activeTeamsCount) {
+                team1 = teams[teamIndex++];
+                team2 = teams[teamIndex++];
+            } else if (teamIndex < count) {
+                team1 = teams[teamIndex++];
+                team2 = null; // BYE
+                winner = team1; // Advances automatically
             }
-        };
 
-        window.App = App;
-        window.setMode = (m) => App.setMode(m);
-        window.changeSize = (d) => App.changeSize(d);
-        window.addTeam = () => App.add();
-        window.processAndDownload = () => App.download();
-        window.toggleLang = () => App.toggleLang();
-        window.toggleTheme = () => {
-            document.body.classList.toggle('dark');
-            const isDark = document.body.classList.contains('dark');
-            document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
-            document.getElementById('moon-icon').classList.toggle('hidden', isDark);
-        };
-        window.onload = () => App.init();
-    </script>
-</body>
-</html>
+            r1.push({ id: `r0-m${i}`, team1, team2, winner });
+        }
+
+        const rounds = [{ matches: r1 }];
+
+        for (let r = 1; r < rCount; r++) {
+            const matches = [];
+            for (let m = 0; m < bSize / Math.pow(2, r + 1); m++) {
+                const match = { id: `r${r}-m${m}`, team1: null, team2: null, winner: null };
+                
+                const p1 = rounds[r-1].matches[m*2];
+                const p2 = rounds[r-1].matches[m*2 + 1];
+                
+                if (p1.winner) match.team1 = p1.winner;
+                if (p2.winner) match.team2 = p2.winner;
+
+                matches.push(match);
+            }
+            rounds.push({ matches });
+        }
+        return { rounds };
+    }
+};
+
+window.App = App;
+window.setMode = (m) => App.setMode(m);
+window.changeSize = (d) => App.changeSize(d);
+window.addTeam = () => App.add();
+window.processAndDownload = () => App.download();
+window.toggleLang = () => App.toggleLang();
+window.toggleTheme = () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
+    document.getElementById('moon-icon').classList.toggle('hidden', isDark);
+};
+window.onload = () => App.init();

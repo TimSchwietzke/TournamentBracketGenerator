@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tournament Pro - Live Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark">
+
+    <div class="bg-glow" style="top: -20%; left: -20%;"></div>
+
+    <!-- THEME TOGGLE -->
+    <button class="theme-toggle" onclick="window.toggleTheme()">
+        <svg id="sun-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20" style="color: #fbbf24;"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        <svg id="moon-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style="color: #818cf8;"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+    </button>
+
+    <!-- SETUP VIEW -->
+    <div id="setup-view" class="max-w-xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black uppercase tracking-tighter">Tournament<span class="accent-text">Gen</span></h1>
+                    <p class="text-[9px] font-bold label-text uppercase tracking-[0.2em]" id="brand-sub">Setup & Roster</p>
+                </div>
+            </div>
+            <!-- Language Select -->
+            <button onclick="App.toggleLang()" class="lang-btn p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">EN</button>
+        </div>
+
+        <div class="space-y-6">
+            <section class="card p-5 sm:p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="setup-title">1. Modus & Größe</h2>
+                <div class="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl mb-6">
+                    <button id="tab-auto" class="tab active flex-1" onclick="App.setMode('auto')">Auto-Pool</button>
+                    <button id="tab-manual" class="tab flex-1" onclick="App.setMode('manual')">Direkt</button>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div>
+                        <p class="font-black text-xs uppercase" id="size-title">Team-Größe</p>
+                        <p class="text-[9px] font-bold label-text uppercase mt-0.5" id="size-sub">Personen / Team</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="App.changeSize(-1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">-</button>
+                        <span id="size-display" class="w-6 text-center font-black text-xl">1</span>
+                        <button onclick="App.changeSize(1)" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-lg hover:text-blue-500">+</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card p-5 sm:p-6">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] label-text mb-4" id="roster-title">2. Teilnehmer</h2>
+                <div id="view-auto">
+                    <textarea id="pool-input" class="input-field min-h-[180px]" placeholder="Namen hier eingeben (einer pro Zeile)..."></textarea>
+                </div>
+                <div id="view-manual" class="hidden space-y-4">
+                    <div id="manual-list" class="space-y-3"></div>
+                    <button id="btn-add-manual" onclick="App.addManualEntry()" class="w-full py-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl label-text font-black text-[9px] uppercase tracking-[0.2em] hover:text-blue-500 transition-all">+ Hinzufügen</button>
+                </div>
+            </section>
+
+            <button id="btn-generate" onclick="App.generateTournament()" class="btn-primary shadow-xl">Turnier Erstellen</button>
+        </div>
+    </div>
+
+    <!-- TOURNAMENT VIEW -->
+    <div id="tournament-view" class="hidden min-h-screen flex flex-col">
+        <header class="p-4 sm:p-5 flex justify-between items-center border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg sticky top-0 z-50">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h1 class="text-lg font-black uppercase tracking-tighter">Live<span class="accent-text">Bracket</span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="App.toggleLang()" class="lang-btn p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">EN</button>
+                <button id="btn-reroll" onclick="App.reroll()" class="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-slate-200">Mischen</button>
+                <button id="btn-setup" onclick="App.backToSetup()" class="p-2 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-[10px] uppercase tracking-wider">Setup</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden flex flex-col p-4 sm:p-6 space-y-4">
+            <!-- Next Game Display -->
+            <div id="next-game-container" class="hidden">
+                <div class="next-game-banner">
+                    <div class="flex justify-between items-center mb-2">
+                        <span id="next-game-label" class="text-[10px] font-black uppercase tracking-widest opacity-80">Nächstes Spiel</span>
+                        <span id="next-game-round" class="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Runde 1</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex-1 text-center">
+                            <p id="next-team1-name" class="font-black text-sm uppercase truncate">Team A</p>
+                            <p id="next-team1-members" class="text-[9px] opacity-70 truncate">Spieler...</p>
+                        </div>
+                        <div class="font-black text-xl italic opacity-50">VS</div>
+                        <div class="flex-1 text-center">
+                            <p id="next-team2-name" class="font-black text-sm uppercase truncate">Team B</p>
+                            <p id="next-team2-members" class="text-[9px] opacity-70 truncate">Spieler...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Section -->
+            <section class="card p-4 overflow-hidden">
+                <h2 id="teams-title" class="text-[9px] font-black uppercase tracking-[0.2em] label-text mb-3">Teams & Kader</h2>
+                <div id="teams-display" class="flex overflow-x-auto gap-3 pb-2 scrollbar-hide"></div>
+            </section>
+
+            <!-- Bracket Section -->
+            <div id="bracket-scroller" class="flex-1 overflow-auto rounded-3xl bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800">
+                <div id="bracket-root" class="bracket-container"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- EDIT TEAM MODAL -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div class="card p-6 w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="text-sm font-black uppercase tracking-wider mb-4" id="modal-title">Team Bearbeiten</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase label-text mb-1 block" id="modal-label-name">Team Name</label>
+                    <input type="text" id="edit-team-name" class="input-field w-full text-xs font-black uppercase">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase label-text mb-1 block" id="modal-label-members">Mitglieder</label>
+                    <input type="text" id="edit-team-members" class="input-field w-full text-xs">
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="App.closeEditModal()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-xs uppercase" id="modal-btn-cancel">Abbrechen</button>
+                    <button onclick="App.saveTeamEdit()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs uppercase" id="modal-btn-save">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js" defer></script>
+</body>
+</html>
